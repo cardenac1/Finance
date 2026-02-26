@@ -220,6 +220,36 @@ select.form-input option{background:var(–surface2);}
 .fc-table-row:first-child{border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:2px;padding-bottom:10px;}
 .fc-table-header{font-size:10px;font-weight:700;letter-spacing:1px;color:#6b7299;text-transform:uppercase;}
 
+/* Forecast planner table */
+.fc-planner-header{display:grid;grid-template-columns:2fr 1.2fr 1.6fr 1.2fr 1.2fr;gap:12px;padding:8px 4px 10px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:2px;font-size:10px;font-weight:700;letter-spacing:1px;color:#6b7299;text-transform:uppercase;}
+.fc-planner-row{display:grid;grid-template-columns:2fr 1.2fr 1.6fr 1.2fr 1.2fr;gap:12px;align-items:center;padding:14px 4px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.fc-planner-row:last-child{border-bottom:none;}
+.fc-goal-row{grid-template-columns:2fr 1.5fr 1.6fr 1.2fr;}
+.fc-savings-header{grid-template-columns:2fr 1.5fr 1.6fr 1.2fr;}
+.fc-planner-name{display:flex;align-items:center;gap:10px;}
+.fc-input-wrap{display:flex;align-items:center;gap:6px;background:#0a0b0f;border:1px solid rgba(92,124,255,0.35);border-radius:10px;padding:8px 12px;transition:.2s;}
+.fc-input-wrap:focus-within{border-color:#5c7cff;box-shadow:0 0 0 3px rgba(92,124,255,0.1);}
+.fc-input-label{font-size:12px;color:#6b7299;font-family:'DM Mono',monospace;flex-shrink:0;}
+.fc-payment-input{background:transparent;border:none;outline:none;color:#eef0f8;font-family:'DM Mono',monospace;font-size:16px;font-weight:500;width:90px;text-align:right;}
+.fc-payment-input::-webkit-inner-spin-button,.fc-payment-input::-webkit-outer-spin-button{-webkit-appearance:none;}
+.fc-payment-input::placeholder{color:#3a3d50;}
+.fc-warn{font-size:10px;color:#ff5b6b;margin-top:3px;font-family:'DM Mono',monospace;min-height:14px;}
+
+/* Mobile: planner rows stack to cards */
+@media(max-width:768px){
+.fc-planner-header{display:none;}
+.fc-savings-header{display:none;}
+.fc-planner-row{display:block;padding:14px;margin-bottom:8px;background:#0a0b0f;border-radius:12px;border:1px solid rgba(255,255,255,0.07);}
+.fc-planner-row:last-child{border-bottom:1px solid rgba(255,255,255,0.07);}
+.fc-planner-name{margin-bottom:10px;}
+.fc-mobile-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+.fc-mobile-field{display:flex;flex-direction:column;gap:4px;}
+.fc-mobile-label{font-size:10px;font-weight:700;letter-spacing:1px;color:#6b7299;text-transform:uppercase;}
+.fc-mobile-val{font-size:13px;font-weight:700;}
+.fc-input-wrap{max-width:100%;}
+.fc-payment-input{width:100%;min-width:60px;}
+}
+
 /* Mobile nav */
 .mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#000000;border-top:1px solid rgba(255,255,255,0.12);z-index:100;padding:8px 0 env(safe-area-inset-bottom);box-shadow:0 -4px 20px rgba(0,0,0,0.6);}
 .mobile-nav-items{display:flex;justify-content:space-around;}
@@ -345,7 +375,7 @@ select.form-input option{background:var(–surface2);}
     <div id="netSurplusAmount" style="font-family:'DM Mono',monospace;font-size:32px;font-weight:500;letter-spacing:-1px;margin:4px 0;">$0</div>
     <div id="netSurplusDesc" style="font-size:11px;color:#6b7299;font-family:'DM Mono',monospace;margin-bottom:12px;">after all expenses &amp; debt payments</div>
   </div>
-  <div style="height:160px;"><canvas id="netSurplusChart"></canvas></div>
+  <div style="height:200px;"><canvas id="netSurplusChart"></canvas></div>
 </div>
 
 <div class="grid-2" style="margin-bottom:16px;">
@@ -569,10 +599,10 @@ select.form-input option{background:var(–surface2);}
     <div class="page-header">
       <div>
         <div class="page-title">Forecast</div>
-        <div class="page-subtitle">Plan your monthly spending to hit your goals and pay off debt</div>
+        <div class="page-subtitle">Type your planned payment for each account — see payoff dates &amp; savings update live</div>
       </div>
       <div class="header-actions">
-        <select class="form-input" id="fcMonths" onchange="renderForecast()" style="padding:8px 12px;font-size:12px;width:auto;">
+        <select class="form-input" id="fcMonths" onchange="fcSaveMonths(this.value)" style="padding:8px 12px;font-size:12px;width:auto;">
           <option value="12">12 Months</option>
           <option value="24">24 Months</option>
           <option value="36" selected>36 Months</option>
@@ -581,31 +611,17 @@ select.form-input option{background:var(–surface2);}
       </div>
     </div>
 
-    <!-- Planning Inputs -->
+    <!-- Budget bar -->
     <div class="card" style="margin-bottom:16px;">
-      <div class="card-title">Monthly Plan — How Much Will You Put Toward Each?</div>
-      <div class="grid-3" style="margin-bottom:16px;">
-        <div class="form-group">
-          <label class="form-label">Extra Debt/Credit Payments ($/mo)</label>
-          <input type="number" class="form-input" id="fcExtraDebt" placeholder="0" min="0" oninput="renderForecast()">
-          <div style="font-size:10px;color:#6b7299;margin-top:4px;font-family:'DM Mono',monospace;">Above minimums, applied to highest-APR debt first</div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Monthly Savings ($/mo)</label>
-          <input type="number" class="form-input" id="fcSavings" placeholder="0" min="0" oninput="renderForecast()">
-          <div style="font-size:10px;color:#6b7299;margin-top:4px;font-family:'DM Mono',monospace;">Goes into savings / emergency fund / vacation</div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Monthly Discretionary Spending ($/mo)</label>
-          <input type="number" class="form-input" id="fcDiscretionary" placeholder="0" min="0" oninput="renderForecast()">
-          <div style="font-size:10px;color:#6b7299;margin-top:4px;font-family:'DM Mono',monospace;">Food, fun, personal — beyond fixed expenses</div>
-        </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="card-title" style="margin-bottom:0;">Monthly Budget Overview</div>
+        <div id="fcSurplusTag" style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:99px;"></div>
       </div>
-      <!-- Budget breakdown bar -->
-      <div id="fcBudgetBreakdown"></div>
+      <div class="fc-budget-bar" id="fcBudgetBar" style="height:26px;border-radius:10px;margin:0 0 10px;"></div>
+      <div class="fc-budget-legend" id="fcBudgetLegend"></div>
     </div>
 
-    <!-- KPI Summary -->
+    <!-- KPIs -->
     <div class="grid-4" style="margin-bottom:16px;">
       <div class="kpi blue">
         <div class="kpi-label">Projected Savings</div>
@@ -615,41 +631,81 @@ select.form-input option{background:var(–surface2);}
       <div class="kpi green">
         <div class="kpi-label">Debt-Free Est.</div>
         <div class="kpi-value green" id="fcKpiDebtFree">—</div>
-        <div class="kpi-sub">at current payment rate</div>
+        <div class="kpi-sub">at your planned payments</div>
       </div>
       <div class="kpi" id="fcKpiSurplusCard">
         <div class="kpi-label">Monthly Surplus</div>
         <div class="kpi-value" id="fcKpiSurplus">$0</div>
-        <div class="kpi-sub" id="fcKpiSurplusSub">after all planned spending</div>
+        <div class="kpi-sub" id="fcKpiSurplusSub">income minus all spending</div>
       </div>
-      <div class="kpi red">
+      <div class="kpi purple">
         <div class="kpi-label">Interest Saved</div>
-        <div class="kpi-value orange" id="fcKpiInterestSaved">$0</div>
+        <div class="kpi-value" style="color:#a78bfa;" id="fcKpiInterestSaved">$0</div>
         <div class="kpi-sub">vs. minimums only</div>
       </div>
     </div>
 
-    <!-- Main forecast chart -->
+    <!-- Debt Payment Planner -->
     <div class="card" style="margin-bottom:16px;">
-      <div class="card-title">Savings vs Debt Over Time</div>
-      <div class="chart-wrap-lg"><canvas id="forecastChart"></canvas></div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div class="card-title" style="margin-bottom:2px;">Debt &amp; Credit Payment Planner</div>
+          <div style="font-size:11px;color:#6b7299;">Type exactly how much you plan to pay each account every month. The payoff date and total interest update as you type.</div>
+        </div>
+      </div>
+      <div style="background:#0a0b0f;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#6b7299;line-height:1.5;">
+        💡 <strong style="color:#eef0f8;">Tip:</strong> Start by setting each account to its minimum payment. Then add extra to your highest-APR debts (usually credit cards) — even $50 extra/month can save hundreds in interest and months off your payoff date.
+      </div>
+      <!-- Desktop column headers -->
+      <div class="fc-planner-header">
+        <div>Account</div><div>Balance / Rate</div><div>Your Monthly Payment</div><div>Payoff Date</div><div>Total Interest</div>
+      </div>
+      <div id="fcDebtPlanner"></div>
+      <div id="fcDebtPlannerSummary" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);"></div>
     </div>
 
-    <!-- Debt payoff chart + savings goals -->
-    <div class="grid-2" style="margin-bottom:16px;">
-      <div class="card">
-        <div class="card-title">Debt Payoff Timeline</div>
-        <div id="fcDebtPayoffList"></div>
+    <!-- Savings Planner -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title" style="margin-bottom:12px;">Savings Planner</div>
+      <div class="fc-planner-header fc-savings-header">
+        <div>Goal</div><div>Progress</div><div>Monthly Contribution</div><div>Reach Date</div>
       </div>
-      <div class="card">
-        <div class="card-title">Savings Goals Forecast</div>
-        <div id="fcGoalsForecast"></div>
+      <div id="fcSavingsPlanner"></div>
+      <!-- General savings row -->
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);">
+        <div class="fc-planner-row fc-goal-row" style="border-bottom:none;padding-bottom:0;">
+          <div class="fc-planner-name">
+            <div style="font-size:20px;">💰</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;">General Savings</div>
+              <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;">Not tied to a specific goal</div>
+            </div>
+          </div>
+          <div>
+            <div style="background:#12141a;border-radius:99px;height:6px;overflow:hidden;margin-bottom:3px;"><div style="height:100%;border-radius:99px;background:#38bdf8;width:0%;"></div></div>
+            <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;" id="fcGenSavAccum">$0 in 36 months</div>
+          </div>
+          <div>
+            <div class="fc-input-wrap">
+              <span class="fc-input-label">$</span>
+              <input type="number" class="fc-payment-input" id="fcGeneralSavings" placeholder="0" min="0" oninput="fcSavingsInputChange(this.value)">
+              <span class="fc-input-label">/mo</span>
+            </div>
+          </div>
+          <div style="font-size:12px;color:#38bdf8;font-family:'DM Mono',monospace;" id="fcGenSavDate">—</div>
+        </div>
       </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Savings Growth vs Debt Paydown</div>
+      <div class="chart-wrap-lg"><canvas id="forecastChart"></canvas></div>
     </div>
 
     <!-- Month-by-month table -->
     <div class="card">
-      <div class="card-title">Month-by-Month Breakdown</div>
+      <div class="card-title" style="margin-bottom:14px;">Month-by-Month Breakdown</div>
       <div id="forecastTable"></div>
     </div>
   </div>
@@ -850,7 +906,7 @@ let state = {
   goals: [],
   settings: { extraPayment: 0, payoffStrategy: 'avalanche' },
   customPayments: {},
-  forecast: { extraDebtPayment: 0, monthlySavings: 0, monthlyDiscretionary: 0, forecastMonths: 36 }
+  forecast: { debtPayments: {}, goalContributions: {}, generalSavings: 0, forecastMonths: 36 }
 };
 
 // ─── DEFAULT DATA ────────────────────────────────────────────────────
@@ -987,17 +1043,25 @@ function renderDashboard() {
   surplusLabelEl.style.color = surplus >= 0 ? '#22d47e' : '#ff5b6b';
   surplusDescEl.textContent = surplus >= 0 ? 'available after all expenses & debt payments' : 'deficit — spending exceeds income';
 
+  // Net surplus bar: income goes UP (positive), expenses/debt go DOWN (negative), surplus floats at top or bottom
   destroyChart('netSurplus');
   const ctxNS = document.getElementById('netSurplusChart').getContext('2d');
-  const totalOut = expenses + minP;
+  const nsData = [income, -expenses, -minP, surplus];
+  const nsColors = [
+    'rgba(34,212,126,0.85)',
+    'rgba(255,91,107,0.85)',
+    'rgba(255,159,67,0.85)',
+    surplus >= 0 ? 'rgba(92,124,255,0.85)' : 'rgba(255,91,107,0.9)'
+  ];
+  const nsBorder = ['#22d47e', '#ff5b6b', '#ff9f43', surplus >= 0 ? '#5c7cff' : '#ff5b6b'];
   charts['netSurplus'] = new Chart(ctxNS, {
     type: 'bar',
     data: {
-      labels: ['Income', 'Expenses', 'Debt\nPayments', surplus >= 0 ? 'Surplus' : 'Deficit'],
+      labels: ['Income', 'Expenses', 'Debt Payments', surplus >= 0 ? 'Net Surplus' : 'Deficit'],
       datasets: [{
-        data: [income, expenses, minP, Math.abs(surplus)],
-        backgroundColor: ['rgba(34,212,126,0.8)', 'rgba(255,91,107,0.8)', 'rgba(255,159,67,0.8)', surplus >= 0 ? 'rgba(92,124,255,0.8)' : 'rgba(255,91,107,0.9)'],
-        borderColor: ['#22d47e', '#ff5b6b', '#ff9f43', surplus >= 0 ? '#5c7cff' : '#ff5b6b'],
+        data: nsData,
+        backgroundColor: nsColors,
+        borderColor: nsBorder,
         borderWidth: 2,
         borderRadius: 8,
         borderSkipped: false,
@@ -1005,10 +1069,16 @@ function renderDashboard() {
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + fmtK(c.raw) } } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ' ' + fmtK(Math.abs(c.raw)) } }
+      },
       scales: {
         x: { grid: { display: false } },
-        y: { ticks: { callback: v => fmtK(v) }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        y: {
+          ticks: { callback: v => fmtK(Math.abs(v)) },
+          grid: { color: ctx => ctx.tick.value === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.04)' }
+        }
       }
     }
   });
@@ -1471,269 +1541,334 @@ function renderGoals() {
 }
 
 // ─── RENDER FORECAST ──────────────────────────────────────────────────
-function renderForecast() {
+let _fcDebounce;
+
+function fcDebtInputChange(debtId, value) {
+  if (!state.forecast.debtPayments) state.forecast.debtPayments = {};
+  const amount = Math.max(0, parseFloat(value) || 0);
+  state.forecast.debtPayments[debtId] = amount;
+  _fcUpdateDebtRow(debtId, amount);
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 280);
+}
+
+function fcGoalInputChange(goalId, value) {
+  if (!state.forecast.goalContributions) state.forecast.goalContributions = {};
+  const amount = Math.max(0, parseFloat(value) || 0);
+  state.forecast.goalContributions[goalId] = amount;
+  _fcUpdateGoalRow(goalId, amount);
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 280);
+}
+
+function fcSavingsInputChange(value) {
+  state.forecast.generalSavings = Math.max(0, parseFloat(value) || 0);
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 280);
+}
+
+function fcSaveMonths(value) {
+  state.forecast.forecastMonths = parseInt(value) || 36;
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 100);
+}
+
+function _fcUpdateDebtRow(debtId, payment) {
+  const d = state.debts.find(x => x.id === debtId);
+  if (!d) return;
+  const mo = monthsToPayoff(d.balance, d.apr, payment);
+  const interest = totalInterest(d.balance, d.apr, payment);
+  const payoffEl = document.getElementById('fc-payoff-' + debtId);
+  const interestEl = document.getElementById('fc-interest-' + debtId);
+  const warnEl = document.getElementById('fc-warn-' + debtId);
+  if (payoffEl) {
+    if (payment <= 0) { payoffEl.textContent = 'No payment'; payoffEl.style.color = '#6b7299'; }
+    else if (!isFinite(mo)) { payoffEl.textContent = 'Never ⚠'; payoffEl.style.color = '#ff5b6b'; }
+    else {
+      payoffEl.textContent = addMonths(new Date(), mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      payoffEl.style.color = mo <= 12 ? '#22d47e' : mo <= 36 ? '#eef0f8' : '#6b7299';
+    }
+  }
+  if (interestEl) {
+    interestEl.textContent = isFinite(interest) && interest >= 0 ? fmtK(interest) : '—';
+    interestEl.style.color = interest > 5000 ? '#ff5b6b' : interest > 500 ? '#ff9f43' : '#22d47e';
+  }
+  if (warnEl) {
+    warnEl.textContent = (payment > 0 && payment < d.minPayment) ? '⚠ Below minimum' : '';
+  }
+}
+
+function _fcUpdateGoalRow(goalId, monthly) {
+  const g = state.goals.find(x => x.id === goalId);
+  if (!g) return;
+  const MONTHS = parseInt(document.getElementById('fcMonths')?.value) || 36;
+  const needed = Math.max(0, g.target - g.saved);
+  const moToReach = monthly > 0 ? Math.ceil(needed / monthly) : Infinity;
+  const reachEl = document.getElementById('fc-greach-' + goalId);
+  const projEl = document.getElementById('fc-gproj-' + goalId);
+  if (reachEl) {
+    if (!isFinite(moToReach)) { reachEl.textContent = 'Add more'; reachEl.style.color = '#6b7299'; }
+    else { reachEl.textContent = addMonths(new Date(), moToReach).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); reachEl.style.color = moToReach <= MONTHS ? '#22d47e' : '#ff9f43'; }
+  }
+  if (projEl) { projEl.style.width = Math.min(100, ((g.saved + monthly * MONTHS) / g.target * 100)).toFixed(1) + '%'; }
+}
+
+function fcRefreshResults() {
   const income = getMonthlyIncome();
-  const expenses = getMonthlyExpenses();
-  const minP = getMinPayments();
-  const baselineSurplus = income - expenses - minP;
+  const fixedExpenses = getMonthlyExpenses();
+  const now = new Date();
+  const MONTHS = parseInt(document.getElementById('fcMonths')?.value) || 36;
+  if (!state.forecast.debtPayments) state.forecast.debtPayments = {};
+  if (!state.forecast.goalContributions) state.forecast.goalContributions = {};
 
-  // Pre-fill inputs from saved state if empty
-  const fcExtraEl = document.getElementById('fcExtraDebt');
-  const fcSavEl = document.getElementById('fcSavings');
-  const fcDiscEl = document.getElementById('fcDiscretionary');
-  const fcMonthsEl = document.getElementById('fcMonths');
-  if (fcExtraEl && fcExtraEl.value === '' && state.forecast.extraDebtPayment) fcExtraEl.value = state.forecast.extraDebtPayment;
-  if (fcSavEl && fcSavEl.value === '' && state.forecast.monthlySavings) fcSavEl.value = state.forecast.monthlySavings;
-  if (fcDiscEl && fcDiscEl.value === '' && state.forecast.monthlyDiscretionary) fcDiscEl.value = state.forecast.monthlyDiscretionary;
-  if (fcMonthsEl && state.forecast.forecastMonths) fcMonthsEl.value = state.forecast.forecastMonths;
+  const includedDebts = state.debts.filter(d => d.included);
+  const totalDebtPmts = includedDebts.reduce((s, d) => s + (state.forecast.debtPayments[d.id] || 0), 0);
+  const totalGoalContribs = state.goals.reduce((s, g) => s + (state.forecast.goalContributions[g.id] || 0), 0);
+  const generalSavings = state.forecast.generalSavings || 0;
+  const totalSavings = totalGoalContribs + generalSavings;
+  const totalOut = fixedExpenses + totalDebtPmts + totalSavings;
+  const surplus = income - totalOut;
 
-  // Read planning inputs (persist to state.forecast)
-  const extraDebt = Math.max(0, parseFloat(fcExtraEl?.value) || 0);
-  const monthlySavings = Math.max(0, parseFloat(fcSavEl?.value) || 0);
-  const discretionary = Math.max(0, parseFloat(fcDiscEl?.value) || 0);
-  const MONTHS = parseInt(fcMonthsEl?.value) || 36;
+  // Budget bar
+  const segs = [
+    { label: 'Fixed Expenses', amount: fixedExpenses, color: '#ff5b6b' },
+    { label: 'Debt Payments', amount: totalDebtPmts, color: '#ff9f43' },
+    { label: 'Savings', amount: totalSavings, color: '#22d47e' },
+    { label: surplus >= 0 ? 'Unallocated' : 'Over Budget', amount: Math.abs(surplus), color: surplus >= 0 ? '#5c7cff' : 'rgba(255,91,107,0.5)' }
+  ].filter(s => s.amount > 0.01);
+  const barTotal = Math.max(income, totalOut, 1);
+  const barEl = document.getElementById('fcBudgetBar');
+  const legEl = document.getElementById('fcBudgetLegend');
+  const tagEl = document.getElementById('fcSurplusTag');
+  if (barEl) barEl.innerHTML = segs.map(s => `<div style="width:${(s.amount/barTotal*100).toFixed(1)}%;background:${s.color};height:100%;" title="${s.label}: ${fmtK(s.amount)}"></div>`).join('');
+  if (legEl) legEl.innerHTML = `<div class="fc-legend-item"><span class="fc-budget-dot" style="background:#6b7299"></span>Income:&nbsp;<span style="color:#22d47e;">${fmtK(income)}/mo</span></div>${segs.map(s=>`<div class="fc-legend-item"><span class="fc-budget-dot" style="background:${s.color}"></span>${s.label}:&nbsp;<span>${fmtK(s.amount)}</span></div>`).join('')}`;
+  if (tagEl) { tagEl.textContent = surplus >= 0 ? `+${fmtK(surplus)} free` : `${fmtK(Math.abs(surplus))} over`; tagEl.style.cssText = `background:${surplus>=0?'rgba(34,212,126,0.15)':'rgba(255,91,107,0.15)'};color:${surplus>=0?'#22d47e':'#ff5b6b'};font-size:11px;font-weight:700;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:99px;`; }
 
-  // Persist inputs
-  state.forecast.extraDebtPayment = extraDebt;
-  state.forecast.monthlySavings = monthlySavings;
-  state.forecast.monthlyDiscretionary = discretionary;
-  state.forecast.forecastMonths = MONTHS;
-  saveToStorage();
+  // Debt summary footer
+  const minTotal = includedDebts.reduce((s, d) => s + d.minPayment, 0);
+  const summaryEl = document.getElementById('fcDebtPlannerSummary');
+  if (summaryEl) {
+    const extra = totalDebtPmts - minTotal;
+    summaryEl.innerHTML = `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+      <div style="font-size:11px;color:#6b7299;font-family:'DM Mono',monospace;">Minimums only: <span style="color:#ff9f43;">${fmtK(minTotal)}/mo</span></div>
+      <div style="font-size:11px;color:#6b7299;font-family:'DM Mono',monospace;">Your plan: <span style="color:#eef0f8;font-weight:700;">${fmtK(totalDebtPmts)}/mo</span></div>
+      ${extra > 0.5 ? `<div style="font-size:11px;color:#22d47e;font-family:'DM Mono',monospace;">+${fmtK(extra)}/mo extra → faster payoff</div>` : extra < -0.5 ? `<div style="font-size:11px;color:#ff5b6b;font-family:'DM Mono',monospace;">⚠ ${fmtK(Math.abs(extra))} below minimums</div>` : ''}
+    </div>`;
+  }
 
-  // Planned monthly outflow
-  const totalPlanned = expenses + minP + extraDebt + monthlySavings + discretionary;
-  const plannedSurplus = income - totalPlanned;
-
-  // Budget breakdown bar
-  const bbEl = document.getElementById('fcBudgetBreakdown');
-  const segments = [
-    { label: 'Fixed Expenses', amount: expenses, color: '#ff5b6b' },
-    { label: 'Debt Minimums', amount: minP, color: '#ff9f43' },
-    { label: 'Extra Debt Payment', amount: extraDebt, color: '#ffd43b' },
-    { label: 'Savings', amount: monthlySavings, color: '#22d47e' },
-    { label: 'Discretionary', amount: discretionary, color: '#a78bfa' },
-    { label: plannedSurplus >= 0 ? 'Remaining' : 'Over Budget', amount: Math.abs(plannedSurplus), color: plannedSurplus >= 0 ? '#5c7cff' : '#ff5b6b' }
-  ].filter(s => s.amount > 0);
-  const totalBar = segments.reduce((s, x) => s + x.amount, 0) || 1;
-  bbEl.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-      <div style="font-size:11px;color:#6b7299;font-family:'DM Mono',monospace;">Income: <span style="color:#22d47e;">${fmtK(income)}/mo</span></div>
-      <div style="margin-left:auto;font-size:11px;font-family:'DM Mono',monospace;color:${plannedSurplus >= 0 ? '#22d47e' : '#ff5b6b'};">
-        ${plannedSurplus >= 0 ? '+' + fmtK(plannedSurplus) + ' unallocated' : fmtK(Math.abs(plannedSurplus)) + ' over budget'}
-      </div>
-    </div>
-    <div class="fc-budget-bar">${segments.map(s => `<div class="fc-budget-segment" style="width:${(s.amount/totalBar*100).toFixed(1)}%;background:${s.color};"></div>`).join('')}</div>
-    <div class="fc-budget-legend">${segments.map(s => `<div class="fc-legend-item"><span class="fc-budget-dot" style="background:${s.color}"></span>${s.label}: <span>&nbsp;${fmtK(s.amount)}</span></div>`).join('')}</div>
-  `;
+  // General savings display
+  const genAccumEl = document.getElementById('fcGenSavAccum');
+  const genDateEl = document.getElementById('fcGenSavDate');
+  if (genAccumEl) genAccumEl.textContent = fmtK(generalSavings * MONTHS) + ' in ' + MONTHS + 'mo';
+  if (genDateEl) genDateEl.textContent = generalSavings > 0 ? '+' + fmtK(generalSavings) + '/mo' : '—';
 
   // Simulate months
-  const now = new Date();
-  const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(now, i + 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
-  let simDebts = state.debts.filter(d => d.included).map(d => ({ ...d }));
-  // Track when each debt is paid off
+  let simDebts = includedDebts.map(d => ({ ...d }));
+  let simBaseline = includedDebts.map(d => ({ ...d }));
   const debtPayoffMonths = {};
   simDebts.forEach(d => { debtPayoffMonths[d.id] = null; });
-
-  let totalDebtData = [];
-  let savingsData = [];
-  let cumulativeSavings = 0;
-  let minPaymentsBaselineData = [];
-  let simDebtsBaseline = state.debts.filter(d => d.included).map(d => ({ ...d }));
+  let totalDebtData = [], savingsData = [], baselineData = [];
+  let cumSavings = 0;
 
   for (let m = 0; m < MONTHS; m++) {
-    // Apply interest and minimum payments to baseline (for interest-saved calc)
-    for (const d of simDebtsBaseline) {
+    // Baseline (minimums only)
+    for (const d of simBaseline) {
       if (d.balance <= 0) continue;
-      d.balance += d.balance * d.apr / 100 / 12;
-      d.balance = Math.max(0, d.balance - d.minPayment);
+      d.balance = Math.max(0, d.balance + d.balance * d.apr / 100 / 12 - d.minPayment);
     }
-    minPaymentsBaselineData.push(simDebtsBaseline.reduce((s, d) => s + d.balance, 0));
-
-    // Avalanche: sort by highest APR, apply extra payment
-    const activeDebts = simDebts.filter(d => d.balance > 0);
-    const sorted = [...activeDebts].sort((a, b) => b.apr - a.apr);
-    let extraLeft = extraDebt;
+    baselineData.push(simBaseline.reduce((s, d) => s + d.balance, 0));
+    // Plan simulation
     for (const d of simDebts) {
       if (d.balance <= 0) continue;
       d.balance += d.balance * d.apr / 100 / 12;
-      const baseP = Math.min(d.minPayment, d.balance);
-      d.balance = Math.max(0, d.balance - baseP);
+      const pmt = Math.min(state.forecast.debtPayments[d.id] || d.minPayment, d.balance);
+      d.balance = Math.max(0, d.balance - pmt);
     }
-    // Apply extra to highest APR first
-    for (const dSorted of sorted) {
-      const dRef = simDebts.find(x => x.id === dSorted.id);
-      if (!dRef || dRef.balance <= 0) continue;
-      const extra = Math.min(extraLeft, dRef.balance);
-      dRef.balance = Math.max(0, dRef.balance - extra);
-      extraLeft -= extra;
-      if (extraLeft <= 0) break;
-    }
-
-    // Track payoff month
     for (const d of simDebts) {
-      if (debtPayoffMonths[d.id] === null && d.balance <= 0.01) {
-        debtPayoffMonths[d.id] = m + 1;
-      }
+      if (debtPayoffMonths[d.id] === null && d.balance <= 0.01) debtPayoffMonths[d.id] = m + 1;
     }
-
-    const debtTotal = simDebts.reduce((s, d) => s + d.balance, 0);
-    totalDebtData.push(debtTotal);
-
-    // Savings accumulate each month
-    cumulativeSavings += monthlySavings;
-    savingsData.push(cumulativeSavings);
+    totalDebtData.push(simDebts.reduce((s, d) => s + d.balance, 0));
+    cumSavings += totalSavings;
+    savingsData.push(cumSavings);
   }
 
-  const initialDebt = getTotalDebt();
-  const finalDebt = totalDebtData[MONTHS - 1] || 0;
-  const finalSavings = savingsData[MONTHS - 1] || 0;
-  const interestSaved = Math.max(0, (minPaymentsBaselineData[MONTHS - 1] || 0) - finalDebt);
+  const interestSaved = Math.max(0, (baselineData[MONTHS-1]||0) - (totalDebtData[MONTHS-1]||0));
 
-  // Estimate debt-free month (beyond forecast if needed)
+  // Debt-free estimate
   let debtFreeLabel = '—';
   for (let i = 0; i < totalDebtData.length; i++) {
-    if (totalDebtData[i] <= 0.01) {
-      debtFreeLabel = addMonths(now, i + 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      break;
-    }
-  }
-  if (debtFreeLabel === '—' && finalDebt < initialDebt) {
-    // Estimate beyond forecast window
-    const remainingDebt = finalDebt;
-    const monthlyPayment = minP + extraDebt;
-    const avgRate = state.debts.filter(d => d.included && d.balance > 0).reduce((s, d) => s + d.apr, 0) / (state.debts.filter(d => d.included && d.balance > 0).length || 1);
-    const mo = monthsToPayoff(remainingDebt, avgRate, monthlyPayment);
-    if (isFinite(mo) && mo > 0) {
-      debtFreeLabel = addMonths(now, MONTHS + mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) + '*';
-    }
+    if (totalDebtData[i] <= 0.01) { debtFreeLabel = addMonths(now, i+1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); break; }
   }
 
-  // KPI cards
-  document.getElementById('fcKpiSavings').textContent = fmtK(finalSavings);
+  // Update payoff dates in existing planner rows (no re-render needed)
+  for (const d of includedDebts) {
+    const mo = debtPayoffMonths[d.id];
+    const el = document.getElementById('fc-payoff-' + d.id);
+    if (el && mo) { el.textContent = addMonths(now, mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); el.style.color = mo <= 12 ? '#22d47e' : mo <= 36 ? '#eef0f8' : '#6b7299'; }
+  }
+
+  // KPIs
+  document.getElementById('fcKpiSavings').textContent = fmtK(savingsData[MONTHS-1]||0);
   document.getElementById('fcKpiSavingsSub').textContent = 'over ' + MONTHS + ' months';
   document.getElementById('fcKpiDebtFree').textContent = debtFreeLabel;
-  const surplusEl = document.getElementById('fcKpiSurplus');
-  surplusEl.textContent = (plannedSurplus >= 0 ? '' : '-') + fmtK(Math.abs(plannedSurplus));
-  surplusEl.className = 'kpi-value ' + (plannedSurplus >= 0 ? 'green' : 'red');
-  document.getElementById('fcKpiSurplusSub').textContent = plannedSurplus >= 0 ? 'after all planned spending' : 'over budget — adjust plan';
-  document.getElementById('fcKpiSurplusCard').className = 'kpi ' + (plannedSurplus >= 0 ? 'green' : 'red');
+  const surplusKpi = document.getElementById('fcKpiSurplus');
+  surplusKpi.textContent = (surplus < 0 ? '-' : '') + fmtK(Math.abs(surplus));
+  surplusKpi.className = 'kpi-value ' + (surplus >= 0 ? 'green' : 'red');
+  document.getElementById('fcKpiSurplusSub').textContent = surplus >= 0 ? 'income minus all planned spending' : 'over budget — reduce somewhere';
+  document.getElementById('fcKpiSurplusCard').className = 'kpi ' + (surplus >= 0 ? 'green' : 'red');
   document.getElementById('fcKpiInterestSaved').textContent = fmtK(interestSaved);
 
-  // Main chart: savings (green) vs debt (red)
+  // Chart
   destroyChart('forecast');
-  const ctx = document.getElementById('forecastChart').getContext('2d');
-  charts['forecast'] = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Cumulative Savings',
-          data: savingsData,
-          borderColor: '#22d47e',
-          backgroundColor: 'rgba(34,212,126,0.12)',
-          fill: true, tension: .4, pointRadius: 0, borderWidth: 2
-        },
-        {
-          label: 'Total Debt',
-          data: totalDebtData,
-          borderColor: '#ff5b6b',
-          backgroundColor: 'rgba(255,91,107,0.12)',
-          fill: true, tension: .4, pointRadius: 0, borderWidth: 2
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: true, position: 'top' },
-        tooltip: { callbacks: { label: c => ' ' + fmtK(c.raw) } }
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { maxTicksLimit: 12 } },
-        y: { ticks: { callback: v => fmtK(v) }, grid: { color: 'rgba(255,255,255,0.04)' } }
+  const ctx = document.getElementById('forecastChart')?.getContext('2d');
+  if (ctx) {
+    const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(now, i+1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+    charts['forecast'] = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [
+        { label: 'Cumulative Savings', data: savingsData, borderColor: '#22d47e', backgroundColor: 'rgba(34,212,126,0.08)', fill: true, tension: .4, pointRadius: 0, borderWidth: 2 },
+        { label: 'Total Debt', data: totalDebtData, borderColor: '#ff5b6b', backgroundColor: 'rgba(255,91,107,0.08)', fill: true, tension: .4, pointRadius: 0, borderWidth: 2 }
+      ]},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'top' }, tooltip: { callbacks: { label: c => ' ' + fmtK(c.raw) } } },
+        scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 12 } }, y: { ticks: { callback: v => fmtK(v) }, grid: { color: 'rgba(255,255,255,0.04)' } } }
       }
-    }
-  });
-
-  // Debt payoff list per account
-  const dpEl = document.getElementById('fcDebtPayoffList');
-  const debtRows = state.debts.filter(d => d.included).map(d => {
-    const payoffMo = debtPayoffMonths[d.id];
-    const payoffLabel = payoffMo
-      ? addMonths(now, payoffMo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-      : (() => {
-          const totalPmt = d.minPayment + (extraDebt > 0 ? 0 : 0); // simplified; avalanche handled above
-          const mo = monthsToPayoff(d.balance, d.apr, d.minPayment + extraDebt);
-          return isFinite(mo) ? addMonths(now, mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) + '*' : 'needs more payment';
-        })();
-    const currentSim = simDebts.find(x => x.id === d.id);
-    const remaining = currentSim ? currentSim.balance : d.balance;
-    return `<div class="fc-debt-row">
-      <div class="fc-debt-dot" style="background:${d.color}"></div>
-      <div class="fc-debt-info">
-        <div class="fc-debt-name">${d.name}</div>
-        <div class="fc-debt-date">Paid off: ${payoffLabel}</div>
-      </div>
-      <div class="fc-debt-amount" style="color:${remaining <= 0.01 ? '#22d47e' : '#ff5b6b'}">
-        ${remaining <= 0.01 ? 'Done!' : fmtK(remaining)}
-      </div>
-    </div>`;
-  }).join('');
-  dpEl.innerHTML = debtRows || `<div class="empty"><div class="empty-icon">🎉</div><div class="empty-text">No debts tracked yet</div></div>`;
-
-  // Savings goals forecast
-  const gfEl = document.getElementById('fcGoalsForecast');
-  if (state.goals.length === 0) {
-    gfEl.innerHTML = `<div class="empty"><div class="empty-icon">🎯</div><div class="empty-text">Add savings goals to see forecasts</div></div>`;
-  } else {
-    gfEl.innerHTML = state.goals.map(g => {
-      const needed = Math.max(0, g.target - g.saved);
-      const monthly = (g.monthly || 0) + (monthlySavings / (state.goals.length || 1));
-      const moToReach = monthly > 0 ? Math.ceil(needed / monthly) : Infinity;
-      const reachDate = isFinite(moToReach) ? addMonths(now, moToReach).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Increase savings';
-      const pct = Math.min(100, (g.saved / g.target) * 100);
-      const projectedSaved = Math.min(g.target, g.saved + monthly * MONTHS);
-      const projectedPct = Math.min(100, (projectedSaved / g.target) * 100);
-      return `<div style="margin-bottom:16px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <div style="font-size:13px;font-weight:700;">${g.emoji || '🎯'} ${g.name}</div>
-          <div style="font-size:11px;color:#6b7299;font-family:'DM Mono',monospace;">${fmtK(projectedSaved)} / ${fmtK(g.target)}</div>
-        </div>
-        <div style="background:#12141a;border-radius:99px;height:8px;overflow:hidden;">
-          <div style="height:100%;border-radius:99px;background:rgba(34,212,126,0.3);width:${pct.toFixed(1)}%;"></div>
-        </div>
-        <div style="background:#12141a;border-radius:99px;height:8px;overflow:hidden;margin-top:3px;">
-          <div style="height:100%;border-radius:99px;background:#22d47e;width:${projectedPct.toFixed(1)}%;transition:.5s;"></div>
-        </div>
-        <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;margin-top:4px;">
-          Current <span style="color:#eef0f8;">${pct.toFixed(0)}%</span> &nbsp;·&nbsp; Projected in ${MONTHS}mo: <span style="color:#22d47e;">${projectedPct.toFixed(0)}%</span> &nbsp;·&nbsp; Goal: <span style="color:#5c7cff;">${reachDate}</span>
-        </div>
-      </div>`;
-    }).join('');
+    });
   }
 
   // Month-by-month table
   const tbl = document.getElementById('forecastTable');
-  const tableHeader = `<div class="fc-table-row">
-    <div class="fc-table-header">Month</div>
-    <div class="fc-table-header" style="text-align:right;">Debt Remaining</div>
-    <div class="fc-table-header" style="text-align:right;">Savings</div>
-    <div class="fc-table-header" style="text-align:right;">Monthly Surplus</div>
-  </div>`;
-  const tableRows = Array.from({ length: MONTHS }, (_, i) => {
-    const date = addMonths(now, i + 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    const debt = totalDebtData[i] || 0;
-    const sav = savingsData[i] || 0;
-    return `<div class="fc-table-row">
-      <div style="color:#6b7299;">${date}</div>
-      <div style="text-align:right;color:${debt <= 0.01 ? '#22d47e' : '#ff5b6b'};font-family:'DM Mono',monospace;">${debt <= 0.01 ? 'Paid off!' : fmtK(debt)}</div>
-      <div style="text-align:right;color:#22d47e;font-family:'DM Mono',monospace;">${fmtK(sav)}</div>
-      <div style="text-align:right;color:${plannedSurplus >= 0 ? '#5c7cff' : '#ff5b6b'};font-family:'DM Mono',monospace;">${plannedSurplus >= 0 ? '+' : ''}${fmtK(plannedSurplus)}</div>
-    </div>`;
-  }).join('');
-  tbl.innerHTML = tableHeader + tableRows;
+  if (tbl) {
+    tbl.innerHTML = `<div class="fc-table-row"><div class="fc-table-header">Month</div><div class="fc-table-header" style="text-align:right;">Debt Remaining</div><div class="fc-table-header" style="text-align:right;">Cumul. Savings</div><div class="fc-table-header" style="text-align:right;">Monthly Surplus</div></div>` +
+    Array.from({ length: MONTHS }, (_, i) => {
+      const d = totalDebtData[i]||0, s = savingsData[i]||0;
+      return `<div class="fc-table-row"><div style="color:#6b7299;">${addMonths(now,i+1).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div><div style="text-align:right;color:${d<=0.01?'#22d47e':'#ff5b6b'};font-family:'DM Mono',monospace;">${d<=0.01?'✓ Paid off':fmtK(d)}</div><div style="text-align:right;color:#22d47e;font-family:'DM Mono',monospace;">${fmtK(s)}</div><div style="text-align:right;color:${surplus>=0?'#5c7cff':'#ff5b6b'};font-family:'DM Mono',monospace;">${surplus>=0?'+':''}${fmtK(surplus)}</div></div>`;
+    }).join('');
+  }
+  saveToStorage();
 }
+
+function renderForecast() {
+  // Initialize state safely
+  if (!state.forecast) state.forecast = {};
+  if (!state.forecast.debtPayments) state.forecast.debtPayments = {};
+  if (!state.forecast.goalContributions) state.forecast.goalContributions = {};
+  if (!state.forecast.generalSavings) state.forecast.generalSavings = 0;
+
+  // Restore months selector
+  const fcMonthsEl = document.getElementById('fcMonths');
+  if (fcMonthsEl && state.forecast.forecastMonths) fcMonthsEl.value = state.forecast.forecastMonths;
+  const MONTHS = parseInt(fcMonthsEl?.value) || 36;
+
+  const includedDebts = state.debts.filter(d => d.included);
+
+  // Initialize default payments for any debt not yet set
+  for (const d of includedDebts) {
+    if (state.forecast.debtPayments[d.id] === undefined) state.forecast.debtPayments[d.id] = d.minPayment;
+  }
+  for (const g of state.goals) {
+    if (state.forecast.goalContributions[g.id] === undefined) state.forecast.goalContributions[g.id] = g.monthly || 0;
+  }
+
+  // Render debt planner rows
+  const dpEl = document.getElementById('fcDebtPlanner');
+  if (dpEl) {
+    if (includedDebts.length === 0) {
+      dpEl.innerHTML = `<div class="empty"><div class="empty-icon">💳</div><div class="empty-text">No debt accounts added yet. Go to My Accounts to add them.</div></div>`;
+    } else {
+      dpEl.innerHTML = includedDebts.map(d => {
+        const payment = state.forecast.debtPayments[d.id] ?? d.minPayment;
+        const mo = monthsToPayoff(d.balance, d.apr, payment);
+        const interest = totalInterest(d.balance, d.apr, payment);
+        const payoffText = payment <= 0 ? 'No payment' : !isFinite(mo) ? 'Never ⚠' : addMonths(new Date(), mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        const payoffColor = payment <= 0 ? '#6b7299' : !isFinite(mo) ? '#ff5b6b' : mo <= 12 ? '#22d47e' : mo <= 36 ? '#eef0f8' : '#6b7299';
+        const interestColor = interest > 5000 ? '#ff5b6b' : interest > 500 ? '#ff9f43' : '#22d47e';
+        const isLow = payment > 0 && payment < d.minPayment;
+        return `<div class="fc-planner-row">
+          <div class="fc-planner-name">
+            <div class="fc-debt-dot" style="background:${d.color};width:12px;height:12px;border-radius:50%;flex-shrink:0;"></div>
+            <div>
+              <div style="font-size:13px;font-weight:700;">${d.name}</div>
+              <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;">${d.type} · Min: ${fmt(d.minPayment)}/mo</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'DM Mono',monospace;font-size:14px;color:#ff5b6b;">${fmtK(d.balance)}</div>
+            <div style="font-size:11px;color:${d.apr > 20 ? '#ff5b6b' : d.apr > 10 ? '#ff9f43' : '#6b7299'};font-family:'DM Mono',monospace;">${d.apr}% APR</div>
+          </div>
+          <div>
+            <div class="fc-input-wrap">
+              <span class="fc-input-label">$</span>
+              <input type="number" class="fc-payment-input" value="${payment || ''}" placeholder="${d.minPayment || '0'}" min="0" oninput="fcDebtInputChange('${d.id}', this.value)">
+              <span class="fc-input-label">/mo</span>
+            </div>
+            <div class="fc-warn" id="fc-warn-${d.id}">${isLow ? '⚠ Below minimum' : ''}</div>
+          </div>
+          <div>
+            <div id="fc-payoff-${d.id}" style="font-size:13px;font-weight:700;color:${payoffColor};">${payoffText}</div>
+            <div style="font-size:10px;color:#6b7299;">payoff date</div>
+          </div>
+          <div>
+            <div id="fc-interest-${d.id}" style="font-size:13px;font-weight:700;color:${interestColor};">${isFinite(interest) && interest >= 0 ? fmtK(interest) : '—'}</div>
+            <div style="font-size:10px;color:#6b7299;">total interest</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Render savings planner rows
+  const spEl = document.getElementById('fcSavingsPlanner');
+  if (spEl) {
+    if (state.goals.length === 0) {
+      spEl.innerHTML = `<div style="padding:12px 0 4px;font-size:12px;color:#6b7299;">No savings goals yet. Add goals in the Goals page, then plan contributions here.</div>`;
+    } else {
+      spEl.innerHTML = state.goals.map(g => {
+        const monthly = state.forecast.goalContributions[g.id] || 0;
+        const needed = Math.max(0, g.target - g.saved);
+        const moToReach = monthly > 0 ? Math.ceil(needed / monthly) : Infinity;
+        const reachText = !isFinite(moToReach) ? 'Add more' : addMonths(new Date(), moToReach).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        const reachColor = !isFinite(moToReach) ? '#6b7299' : moToReach <= MONTHS ? '#22d47e' : '#ff9f43';
+        const currPct = Math.min(100, (g.saved / g.target * 100)).toFixed(1);
+        const projPct = Math.min(100, ((g.saved + monthly * MONTHS) / g.target * 100)).toFixed(1);
+        return `<div class="fc-planner-row fc-goal-row">
+          <div class="fc-planner-name">
+            <div style="font-size:22px;line-height:1;">${g.emoji || '🎯'}</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;">${g.name}</div>
+              <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;">${fmtK(g.saved)} saved of ${fmtK(g.target)}</div>
+            </div>
+          </div>
+          <div>
+            <div style="background:#0a0b0f;border-radius:99px;height:6px;overflow:hidden;margin-bottom:3px;"><div style="height:100%;border-radius:99px;background:rgba(34,212,126,0.3);width:${currPct}%"></div></div>
+            <div style="background:#0a0b0f;border-radius:99px;height:6px;overflow:hidden;"><div id="fc-gproj-${g.id}" style="height:100%;border-radius:99px;background:#22d47e;width:${projPct}%;transition:.4s;"></div></div>
+            <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;margin-top:3px;">now: ${currPct}% → in ${MONTHS}mo: <span style="color:#22d47e;">${projPct}%</span></div>
+          </div>
+          <div>
+            <div class="fc-input-wrap">
+              <span class="fc-input-label">$</span>
+              <input type="number" class="fc-payment-input" value="${monthly || ''}" placeholder="0" min="0" oninput="fcGoalInputChange('${g.id}', this.value)">
+              <span class="fc-input-label">/mo</span>
+            </div>
+          </div>
+          <div>
+            <div id="fc-greach-${g.id}" style="font-size:13px;font-weight:700;color:${reachColor};">${reachText}</div>
+            <div style="font-size:10px;color:#6b7299;">reach date</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Restore general savings input
+  const genSavEl = document.getElementById('fcGeneralSavings');
+  if (genSavEl && !genSavEl.value && state.forecast.generalSavings) genSavEl.value = state.forecast.generalSavings;
+
+  // Run full calculation
+  fcRefreshResults();
+}
+
 
 // ─── CRUD HELPERS ──────────────────────────────────────────────────────
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
