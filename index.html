@@ -1058,6 +1058,10 @@ function fmt(n) {
   if (n === undefined || n === null || isNaN(n)) return '$0';
   return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+function fmtMonthLabel(d) {
+  // Always returns e.g. "Mar '26" — apostrophe before year so it can't be read as a day
+  return d.toLocaleDateString('en-US', { month: 'short' }) + " '" + String(d.getFullYear()).slice(2);
+}
 function fmtK(n) {
   if (Math.abs(n) >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M';
   if (Math.abs(n) >= 1000) return '$' + (n / 1000).toFixed(1) + 'K';
@@ -1113,25 +1117,37 @@ function renderDashboard() {
   document.getElementById('kpiDebtSub').textContent = state.debts.filter(d=>d.included).length + ' accounts tracked';
 
   // Monthly Budget Breakdown bar (dashboard)
-  // Scale = income so all bars are proportional to income
-  const dashBarTotal = Math.max(income, 1);
-  const dashSegs = [
-    { label: 'Fixed Expenses', amount: expenses, color: '#ff5b6b' },
-    { label: 'Debt Payments', amount: minP, color: '#ff9f43' },
-    { label: surplus >= 0 ? 'Net Surplus' : 'Over Budget', amount: Math.abs(surplus), color: surplus >= 0 ? '#22d47e' : '#ff5b6b' }
-  ].filter(s => s.amount > 0.01);
+  // Two-row comparison: income bar (green) on top, spending breakdown below — same scale
+  const dashBarScale = Math.max(income, expenses + minP, 1);
   const dashBarEl = document.getElementById('dashBudgetBar');
   const dashLegEl = document.getElementById('dashBudgetLegend');
   const dashTagEl = document.getElementById('dashBudgetTag');
   if (dashBarEl) {
-    // Each segment width = amount / income * 100% — they sum to 100% since expenses+debt+surplus=income
-    const segHtml = dashSegs.map(s => {
-      const w = Math.min(100, (s.amount / dashBarTotal * 100)).toFixed(2);
-      return `<div style="width:${w}%;background:${s.color};height:100%;min-width:${s.amount>0?'2px':'0'};" title="${s.label}: ${fmt(s.amount)}"></div>`;
-    }).join('');
-    dashBarEl.innerHTML = `<div style="display:flex;height:28px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,0.04);">${segHtml}</div>`;
+    const incW = (income / dashBarScale * 100).toFixed(2);
+    const expW = (expenses / dashBarScale * 100).toFixed(2);
+    const debtW = (minP / dashBarScale * 100).toFixed(2);
+    const surpW = Math.max(0, (surplus / dashBarScale * 100)).toFixed(2);
+    const overW = surplus < 0 ? (Math.abs(surplus) / dashBarScale * 100).toFixed(2) : 0;
+    const barStyle = 'display:flex;border-radius:8px;overflow:hidden;background:rgba(255,255,255,0.04);';
+    // Row 1: Income bar (solid green, full width = income)
+    const incomeRow = `<div style="${barStyle}height:14px;margin-bottom:5px;">
+      <div style="width:${incW}%;background:#22d47e;height:100%;border-radius:8px;" title="Income: ${fmt(income)}"></div>
+    </div>`;
+    // Row 2: Expenses (red) + Debt (orange) + Surplus (green) or Over-budget (red stripe)
+    const spendRow = `<div style="${barStyle}height:22px;">
+      ${expenses > 0.01 ? `<div style="width:${expW}%;background:#ff5b6b;height:100%;" title="Fixed Expenses: ${fmt(expenses)}"></div>` : ''}
+      ${minP > 0.01 ? `<div style="width:${debtW}%;background:#ff9f43;height:100%;" title="Debt Payments: ${fmt(minP)}"></div>` : ''}
+      ${surplus > 0.01 ? `<div style="width:${surpW}%;background:rgba(34,212,126,0.35);height:100%;border-left:2px solid rgba(34,212,126,0.5);" title="Surplus: ${fmt(surplus)}"></div>` : ''}
+      ${surplus < -0.01 ? `<div style="width:${overW}%;background:repeating-linear-gradient(45deg,rgba(255,91,107,0.6),rgba(255,91,107,0.6) 4px,rgba(255,91,107,0.2) 4px,rgba(255,91,107,0.2) 8px);height:100%;border-left:2px solid #ff5b6b;" title="Over Budget: ${fmt(Math.abs(surplus))}"></div>` : ''}
+    </div>`;
+    dashBarEl.innerHTML = incomeRow + spendRow;
   }
-  if (dashLegEl) dashLegEl.innerHTML = `<div class="fc-legend-item"><span class="fc-budget-dot" style="background:#22d47e"></span>Income:&nbsp;<span style="color:#22d47e;">${fmt(income)}/mo</span></div>${dashSegs.map(s=>`<div class="fc-legend-item"><span class="fc-budget-dot" style="background:${s.color}"></span>${s.label}:&nbsp;<span>${fmt(s.amount)}</span></div>`).join('')}`;
+  if (dashLegEl) dashLegEl.innerHTML = [
+    `<div class="fc-legend-item"><span class="fc-budget-dot" style="background:#22d47e"></span>Income:&nbsp;<span style="color:#22d47e;">${fmt(income)}/mo</span></div>`,
+    expenses > 0.01 ? `<div class="fc-legend-item"><span class="fc-budget-dot" style="background:#ff5b6b"></span>Expenses:&nbsp;<span>${fmt(expenses)}</span></div>` : '',
+    minP > 0.01 ? `<div class="fc-legend-item"><span class="fc-budget-dot" style="background:#ff9f43"></span>Debt Payments:&nbsp;<span>${fmt(minP)}</span></div>` : '',
+    surplus > 0.01 ? `<div class="fc-legend-item"><span class="fc-budget-dot" style="background:rgba(34,212,126,0.6)"></span>Surplus:&nbsp;<span style="color:#22d47e;">${fmt(surplus)}</span></div>` : '',
+  ].join('');
   if (dashTagEl) { dashTagEl.textContent = surplus >= 0 ? `+${fmt(surplus)} surplus` : `${fmt(Math.abs(surplus))} over`; dashTagEl.style.cssText = `background:${surplus>=0?'rgba(34,212,126,0.15)':'rgba(255,91,107,0.15)'};color:${surplus>=0?'#22d47e':'#ff5b6b'};font-size:11px;font-weight:700;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:99px;`; }
 
   // Net Surplus bar chart
@@ -1534,7 +1550,7 @@ function runPayoffCalc() {
   const maxM = Math.min(Math.max(...Object.values(payoffDates).filter(isFinite), 60) + 6, 360);
   const labels = Array.from({ length: maxM }, (_, i) => {
     const d = addMonths(now, i);
-    return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    return fmtMonthLabel(d);
   });
   const ctx = document.getElementById('payoffChart').getContext('2d');
   charts['payoff'] = new Chart(ctx, {
@@ -1909,7 +1925,7 @@ function fcRenderDebtMonthlyGrid(d, MONTHS, fcStart) {
   const overrides = (typeof pData === 'object' && pData.months) ? pData.months : {};
 
   const headers = Array.from({ length: MONTHS }, (_, i) =>
-    `<th>${addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
+    `<th>${fmtMonthLabel(addMonths(fcStart, i))}</th>`
   ).join('');
 
   const paymentCells = Array.from({ length: MONTHS }, (_, i) => {
@@ -1949,7 +1965,7 @@ function fcRenderExpenseMonthlyGrid(e, MONTHS, fcStart) {
   const overrides = (typeof pData === 'object' && pData.months) ? pData.months : {};
 
   const headers = Array.from({ length: MONTHS }, (_, i) =>
-    `<th>${addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
+    `<th>${fmtMonthLabel(addMonths(fcStart, i))}</th>`
   ).join('');
 
   const amtCells = Array.from({ length: MONTHS }, (_, i) => {
@@ -1977,7 +1993,7 @@ function fcRenderGoalMonthlyGrid(g, MONTHS, fcStart) {
   const overrides = (typeof pData === 'object' && pData.months) ? pData.months : {};
 
   const headers = Array.from({ length: MONTHS }, (_, i) =>
-    `<th>${addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
+    `<th>${fmtMonthLabel(addMonths(fcStart, i))}</th>`
   ).join('');
 
   const cells = Array.from({ length: MONTHS }, (_, i) => {
@@ -2003,7 +2019,7 @@ function fcRenderGeneralSavingsGrid(MONTHS, fcStart) {
   const overrides = state.forecast.generalSavingsMonths || {};
 
   const headers = Array.from({ length: MONTHS }, (_, i) =>
-    `<th>${addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
+    `<th>${fmtMonthLabel(addMonths(fcStart, i))}</th>`
   ).join('');
 
   const cells = Array.from({ length: MONTHS }, (_, i) => {
@@ -2388,7 +2404,7 @@ function fcRefreshResults() {
   destroyChart('forecast');
   const ctx = document.getElementById('forecastChart')?.getContext('2d');
   if (ctx) {
-    const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+    const labels = Array.from({ length: MONTHS }, (_, i) => fmtMonthLabel(addMonths(fcStart, i)));
     const incomeArr   = perMonth.map(d => d.income);
     const expenseArr  = perMonth.map(d => -(d.fixedExp));
     const debtArr     = perMonth.map(d => -(d.debtPmt));
@@ -2435,7 +2451,7 @@ function fcRefreshResults() {
   destroyChart('debtProgress');
   const ctxDP = document.getElementById('debtProgressChart')?.getContext('2d');
   if (ctxDP) {
-    const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+    const labels = Array.from({ length: MONTHS }, (_, i) => fmtMonthLabel(addMonths(fcStart, i)));
     const datasets = [];
     if (debtProgressSeries.length > 0) {
       // Individual debt lines
@@ -2475,7 +2491,7 @@ function fcRefreshResults() {
   destroyChart('savingsSurplus');
   const ctxSS = document.getElementById('savingsSurplusChart')?.getContext('2d');
   if (ctxSS) {
-    const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+    const labels = Array.from({ length: MONTHS }, (_, i) => fmtMonthLabel(addMonths(fcStart, i)));
     const surplusArr2 = perMonth.map(d => d.surplus);
     const surplusColors2 = surplusArr2.map(v => v >= 0 ? 'rgba(92,124,255,0.7)' : 'rgba(255,91,107,0.7)');
     charts['savingsSurplus'] = new Chart(ctxSS, {
