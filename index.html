@@ -235,6 +235,36 @@ select.form-input option{background:var(–surface2);}
 .fc-payment-input::placeholder{color:#3a3d50;}
 .fc-warn{font-size:10px;color:#ff5b6b;margin-top:3px;font-family:'DM Mono',monospace;min-height:14px;}
 
+/* Forecast: debt/expense container wrapper */
+.fc-debt-container,.fc-expense-container{border-bottom:1px solid rgba(255,255,255,0.05);}
+.fc-debt-container:last-child,.fc-expense-container:last-child{border-bottom:none;}
+.fc-expand-row{display:flex;justify-content:flex-end;padding:0 4px 10px;}
+.fc-expand-btn{display:flex;align-items:center;gap:5px;font-size:11px;color:#5c7cff;background:rgba(92,124,255,0.1);border:1px solid rgba(92,124,255,0.25);border-radius:8px;padding:5px 11px;cursor:pointer;font-family:'DM Mono',monospace;font-weight:700;transition:.2s;white-space:nowrap;}
+.fc-expand-btn:hover{background:rgba(92,124,255,0.2);}
+
+/* Monthly planning grid */
+.fc-monthly-grid{display:none;background:#080910;border-radius:12px;padding:14px 14px 10px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.08);}
+.fc-monthly-grid.open{display:block;}
+.fc-months-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.fc-month-table{border-collapse:collapse;min-width:100%;}
+.fc-month-table th{font-size:10px;font-weight:700;color:#6b7299;text-transform:uppercase;letter-spacing:.5px;padding:6px 8px;text-align:center;white-space:nowrap;min-width:72px;border-bottom:1px solid rgba(255,255,255,0.07);}
+.fc-month-table th:first-child{text-align:left;min-width:90px;position:sticky;left:0;background:#080910;z-index:1;}
+.fc-month-table td{padding:5px 6px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.03);}
+.fc-month-table td:first-child{text-align:left;font-size:11px;color:#6b7299;white-space:nowrap;padding-right:12px;position:sticky;left:0;background:#080910;z-index:1;}
+.fc-month-table tr:last-child td{border-bottom:none;}
+.fc-month-input{background:#12141a;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:5px 6px;color:#eef0f8;font-family:'DM Mono',monospace;font-size:12px;width:68px;text-align:center;outline:none;transition:.2s;}
+.fc-month-input:focus{border-color:#5c7cff;box-shadow:0 0 0 2px rgba(92,124,255,0.12);}
+.fc-month-input.modified{border-color:rgba(92,124,255,0.55);background:rgba(92,124,255,0.07);}
+.fc-month-input::-webkit-inner-spin-button,.fc-month-input::-webkit-outer-spin-button{-webkit-appearance:none;}
+.fc-month-stat{font-size:11px;font-family:'DM Mono',monospace;color:#6b7299;}
+.fc-grid-actions{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;}
+.fc-grid-action-btn{font-size:10px;color:#5c7cff;background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;font-family:'DM Mono',monospace;}
+.fc-grid-action-btn.muted{color:#6b7299;}
+
+/* Expense planner */
+.fc-expense-planner-header{display:grid;grid-template-columns:2fr 1.2fr 1.6fr 1.2fr;gap:12px;padding:8px 4px 10px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:2px;font-size:10px;font-weight:700;letter-spacing:1px;color:#6b7299;text-transform:uppercase;}
+.fc-expense-row{display:grid;grid-template-columns:2fr 1.2fr 1.6fr 1.2fr;gap:12px;align-items:center;padding:14px 4px;border-bottom:none;}
+
 /* Mobile: planner rows stack to cards */
 @media(max-width:768px){
 .fc-planner-header{display:none;}
@@ -664,6 +694,20 @@ select.form-input option{background:var(–surface2);}
       <div id="fcDebtPlannerSummary" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);"></div>
     </div>
 
+    <!-- Expense Planner -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div class="card-title" style="margin-bottom:2px;">Expense Planner</div>
+          <div style="font-size:11px;color:#6b7299;">Set your planned amount for each expense per month. Leave blank to use the default. Click <strong style="color:#5c7cff;">▼ Plan by Month</strong> to set different amounts for specific months (e.g. higher utilities in winter).</div>
+        </div>
+      </div>
+      <div class="fc-expense-planner-header">
+        <div>Expense</div><div>Default Amount</div><div>Planned /mo</div><div>Over Period</div>
+      </div>
+      <div id="fcExpensePlanner"></div>
+    </div>
+
     <!-- Savings Planner -->
     <div class="card" style="margin-bottom:16px;">
       <div class="card-title" style="margin-bottom:12px;">Savings Planner</div>
@@ -699,7 +743,8 @@ select.form-input option{background:var(–surface2);}
 
     <!-- Chart -->
     <div class="card" style="margin-bottom:16px;">
-      <div class="card-title">Savings Growth vs Debt Paydown</div>
+      <div class="card-title">Monthly Cash Flow — Income vs Expenses &amp; Surplus</div>
+      <div style="font-size:11px;color:#6b7299;margin-bottom:12px;">Income bars go up (green). Expense + debt bars go down (red/orange). Surplus bar is green when positive, red when negative.</div>
       <div class="chart-wrap-lg"><canvas id="forecastChart"></canvas></div>
     </div>
 
@@ -1543,10 +1588,56 @@ function renderGoals() {
 // ─── RENDER FORECAST ──────────────────────────────────────────────────
 let _fcDebounce;
 
-function fcDebtInputChange(debtId, value) {
+// ── State migration & helpers ──────────────────────────────────────────
+function fcMigrateState() {
+  if (!state.forecast) state.forecast = {};
   if (!state.forecast.debtPayments) state.forecast.debtPayments = {};
+  if (!state.forecast.expensePlanned) state.forecast.expensePlanned = {};
+  // Migrate old flat-number format → {default, months} object
+  for (const id of Object.keys(state.forecast.debtPayments)) {
+    const v = state.forecast.debtPayments[id];
+    if (typeof v === 'number') state.forecast.debtPayments[id] = { default: v, months: {} };
+  }
+  for (const id of Object.keys(state.forecast.expensePlanned)) {
+    const v = state.forecast.expensePlanned[id];
+    if (typeof v === 'number') state.forecast.expensePlanned[id] = { default: v, months: {} };
+  }
+}
+
+function getPlannedDebtPayment(debtId, month) {
+  const p = state.forecast.debtPayments?.[debtId];
+  const debt = state.debts.find(d => d.id === debtId);
+  const fallback = debt?.minPayment || 0;
+  if (!p) return fallback;
+  if (typeof p === 'number') return p;
+  const override = p.months?.[String(month)];
+  return override !== undefined ? override : (p.default !== undefined ? p.default : fallback);
+}
+
+function getPlannedExpenseAmount(expId, month) {
+  const p = state.forecast.expensePlanned?.[expId];
+  const expense = state.expenses.find(e => e.id === expId);
+  const fallback = expense?.amount || 0;
+  if (!p) return fallback;
+  if (typeof p === 'number') return p;
+  const override = p.months?.[String(month)];
+  return override !== undefined ? override : (p.default !== undefined ? p.default : fallback);
+}
+
+function getCategoryEmoji(cat) {
+  const map = { housing:'🏠', food:'🍔', transport:'🚗', utilities:'⚡', subscriptions:'📱', entertainment:'🎬', health:'🏥', other:'📋' };
+  return map[cat] || '💰';
+}
+
+// ── Input handlers ─────────────────────────────────────────────────────
+function fcDebtInputChange(debtId, value) {
+  fcMigrateState();
   const amount = Math.max(0, parseFloat(value) || 0);
-  state.forecast.debtPayments[debtId] = amount;
+  if (!state.forecast.debtPayments[debtId]) {
+    state.forecast.debtPayments[debtId] = { default: amount, months: {} };
+  } else {
+    state.forecast.debtPayments[debtId].default = amount;
+  }
   _fcUpdateDebtRow(debtId, amount);
   clearTimeout(_fcDebounce);
   _fcDebounce = setTimeout(fcRefreshResults, 280);
@@ -1571,6 +1662,244 @@ function fcSaveMonths(value) {
   state.forecast.forecastMonths = parseInt(value) || 36;
   clearTimeout(_fcDebounce);
   _fcDebounce = setTimeout(fcRefreshResults, 100);
+}
+
+function fcDebtMonthChange(debtId, month, value) {
+  fcMigrateState();
+  if (!state.forecast.debtPayments[debtId]) {
+    const debt = state.debts.find(d => d.id === debtId);
+    state.forecast.debtPayments[debtId] = { default: debt?.minPayment || 0, months: {} };
+  }
+  const amount = parseFloat(value);
+  const input = document.getElementById('fc-mi-' + debtId + '-' + month);
+  if (isNaN(amount) || value === '') {
+    delete state.forecast.debtPayments[debtId].months[String(month)];
+    if (input) input.classList.remove('modified');
+  } else {
+    state.forecast.debtPayments[debtId].months[String(month)] = Math.max(0, amount);
+    if (input) input.classList.add('modified');
+  }
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 280);
+}
+
+function fcExpenseDefaultChange(expId, value) {
+  fcMigrateState();
+  const amount = Math.max(0, parseFloat(value) || 0);
+  if (!state.forecast.expensePlanned[expId]) {
+    state.forecast.expensePlanned[expId] = { default: amount, months: {} };
+  } else {
+    state.forecast.expensePlanned[expId].default = amount;
+  }
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 280);
+}
+
+function fcExpenseMonthChange(expId, month, value) {
+  fcMigrateState();
+  if (!state.forecast.expensePlanned[expId]) {
+    const exp = state.expenses.find(e => e.id === expId);
+    state.forecast.expensePlanned[expId] = { default: exp?.amount || 0, months: {} };
+  }
+  const amount = parseFloat(value);
+  const input = document.getElementById('fc-ei-' + expId + '-' + month);
+  if (isNaN(amount) || value === '') {
+    delete state.forecast.expensePlanned[expId].months[String(month)];
+    if (input) input.classList.remove('modified');
+  } else {
+    state.forecast.expensePlanned[expId].months[String(month)] = Math.max(0, amount);
+    if (input) input.classList.add('modified');
+  }
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 280);
+}
+
+function fcFillAllDebtMonths(debtId) {
+  fcMigrateState();
+  const p = state.forecast.debtPayments[debtId];
+  const def = (p && typeof p === 'object') ? (p.default || 0) : (p || 0);
+  const MONTHS = parseInt(document.getElementById('fcMonths')?.value) || 36;
+  for (let m = 0; m < MONTHS; m++) {
+    state.forecast.debtPayments[debtId].months[String(m)] = def;
+    const inp = document.getElementById('fc-mi-' + debtId + '-' + m);
+    if (inp) { inp.value = def; inp.classList.add('modified'); }
+  }
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 280);
+}
+
+function fcClearDebtMonths(debtId) {
+  fcMigrateState();
+  if (state.forecast.debtPayments[debtId]) state.forecast.debtPayments[debtId].months = {};
+  const MONTHS = parseInt(document.getElementById('fcMonths')?.value) || 36;
+  for (let m = 0; m < MONTHS; m++) {
+    const inp = document.getElementById('fc-mi-' + debtId + '-' + m);
+    if (inp) { inp.value = ''; inp.classList.remove('modified'); }
+  }
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 280);
+}
+
+function fcClearExpenseMonths(expId) {
+  fcMigrateState();
+  if (state.forecast.expensePlanned[expId]) state.forecast.expensePlanned[expId].months = {};
+  const MONTHS = parseInt(document.getElementById('fcMonths')?.value) || 36;
+  for (let m = 0; m < MONTHS; m++) {
+    const inp = document.getElementById('fc-ei-' + expId + '-' + m);
+    if (inp) { inp.value = ''; inp.classList.remove('modified'); }
+  }
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 280);
+}
+
+function fcToggleMonthlyView(id) {
+  const el = document.getElementById('fc-monthgrid-' + id);
+  if (!el) return;
+  el.classList.toggle('open');
+  const btn = document.getElementById('fc-expandbtn-' + id);
+  if (btn) {
+    const open = el.classList.contains('open');
+    btn.textContent = open ? '▲ Monthly Plan' : '▼ Monthly Plan';
+    btn.style.color = open ? '#22d47e' : '#5c7cff';
+    btn.style.borderColor = open ? 'rgba(34,212,126,0.3)' : 'rgba(92,124,255,0.25)';
+    btn.style.background = open ? 'rgba(34,212,126,0.08)' : 'rgba(92,124,255,0.1)';
+  }
+}
+
+// ── Monthly grid renderers ─────────────────────────────────────────────
+function fcRenderDebtMonthlyGrid(d, MONTHS, now) {
+  fcMigrateState();
+  const pData = state.forecast.debtPayments[d.id] || { default: d.minPayment, months: {} };
+  const def = typeof pData === 'object' ? (pData.default !== undefined ? pData.default : d.minPayment) : pData;
+  const overrides = (typeof pData === 'object' && pData.months) ? pData.months : {};
+
+  const headers = Array.from({ length: MONTHS }, (_, i) =>
+    `<th>${addMonths(now, i + 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
+  ).join('');
+
+  const paymentCells = Array.from({ length: MONTHS }, (_, i) => {
+    const ov = overrides[String(i)];
+    const hasOv = ov !== undefined;
+    return `<td><input type="number" class="fc-month-input${hasOv ? ' modified' : ''}" id="fc-mi-${d.id}-${i}" value="${hasOv ? ov : ''}" placeholder="${def !== undefined ? def : d.minPayment}" min="0" oninput="fcDebtMonthChange('${d.id}',${i},this.value)"></td>`;
+  }).join('');
+
+  const balCells = Array.from({ length: MONTHS }, (_, i) =>
+    `<td class="fc-month-stat" id="fc-bal-${d.id}-${i}">—</td>`
+  ).join('');
+  const intCells = Array.from({ length: MONTHS }, (_, i) =>
+    `<td class="fc-month-stat" id="fc-int-${d.id}-${i}">—</td>`
+  ).join('');
+
+  return `<div class="fc-grid-actions">
+    <span style="font-size:11px;color:#6b7299;">Leave blank to use default (<span style="color:#eef0f8;">${fmt(def)}/mo</span>). Type to override specific months.</span>
+    <button class="fc-grid-action-btn" onclick="fcFillAllDebtMonths('${d.id}')">Fill all from default</button>
+    <button class="fc-grid-action-btn muted" onclick="fcClearDebtMonths('${d.id}')">Clear overrides</button>
+  </div>
+  <div class="fc-months-scroll">
+    <table class="fc-month-table">
+      <thead><tr><th>Metric</th>${headers}</tr></thead>
+      <tbody>
+        <tr><td style="color:#eef0f8;font-weight:700;">Payment ($)</td>${paymentCells}</tr>
+        <tr><td>Balance After</td>${balCells}</tr>
+        <tr><td>Interest</td>${intCells}</tr>
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function fcRenderExpenseMonthlyGrid(e, MONTHS, now) {
+  fcMigrateState();
+  const pData = state.forecast.expensePlanned?.[e.id] || { default: e.amount, months: {} };
+  const def = typeof pData === 'object' ? (pData.default !== undefined ? pData.default : e.amount) : pData;
+  const overrides = (typeof pData === 'object' && pData.months) ? pData.months : {};
+
+  const headers = Array.from({ length: MONTHS }, (_, i) =>
+    `<th>${addMonths(now, i + 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
+  ).join('');
+
+  const amtCells = Array.from({ length: MONTHS }, (_, i) => {
+    const ov = overrides[String(i)];
+    const hasOv = ov !== undefined;
+    return `<td><input type="number" class="fc-month-input${hasOv ? ' modified' : ''}" id="fc-ei-${e.id}-${i}" value="${hasOv ? ov : ''}" placeholder="${def !== undefined ? def : e.amount}" min="0" oninput="fcExpenseMonthChange('${e.id}',${i},this.value)"></td>`;
+  }).join('');
+
+  return `<div class="fc-grid-actions">
+    <span style="font-size:11px;color:#6b7299;">Leave blank to use default (<span style="color:#eef0f8;">${fmt(def)}/mo</span>). Override any month below.</span>
+    <button class="fc-grid-action-btn muted" onclick="fcClearExpenseMonths('${e.id}')">Clear overrides</button>
+  </div>
+  <div class="fc-months-scroll">
+    <table class="fc-month-table">
+      <thead><tr><th>Amount</th>${headers}</tr></thead>
+      <tbody><tr><td style="color:#eef0f8;font-weight:700;">Planned ($)</td>${amtCells}</tr></tbody>
+    </table>
+  </div>`;
+}
+
+function fcUpdateMonthlyGrids(debtMonthlyData, MONTHS) {
+  for (const [debtId, arr] of Object.entries(debtMonthlyData)) {
+    for (let m = 0; m < Math.min(MONTHS, arr.length); m++) {
+      const { payment, interest, balanceAfter } = arr[m];
+      const balEl = document.getElementById('fc-bal-' + debtId + '-' + m);
+      const intEl = document.getElementById('fc-int-' + debtId + '-' + m);
+      if (balEl) {
+        balEl.textContent = balanceAfter <= 0.01 ? '✓ Paid off' : fmtK(balanceAfter);
+        balEl.style.color = balanceAfter <= 0.01 ? '#22d47e' : '#ff5b6b';
+      }
+      if (intEl) {
+        intEl.textContent = interest < 0.01 ? '$0' : fmtK(interest);
+        intEl.style.color = interest > 50 ? '#ff9f43' : '#6b7299';
+      }
+    }
+  }
+}
+
+function renderFcExpensePlanner(MONTHS, now) {
+  const epEl = document.getElementById('fcExpensePlanner');
+  if (!epEl) return;
+  fcMigrateState();
+  if (state.expenses.length === 0) {
+    epEl.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No expenses added yet. Go to Cash Flow to add expenses, then plan them here.</div></div>`;
+    return;
+  }
+  epEl.innerHTML = state.expenses.map(e => {
+    const pData = state.forecast.expensePlanned[e.id];
+    const def = (typeof pData === 'object' && pData) ? (pData.default !== undefined ? pData.default : e.amount) : (typeof pData === 'number' ? pData : e.amount);
+    const hasOverrides = typeof pData === 'object' && pData?.months && Object.keys(pData.months).length > 0;
+    const inputVal = (def !== e.amount) ? def : '';
+    return `<div class="fc-expense-container">
+      <div class="fc-expense-row">
+        <div class="fc-planner-name">
+          <div style="font-size:20px;line-height:1;">${getCategoryEmoji(e.category)}</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;">${e.name}</div>
+            <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;">${e.category || 'expense'}</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:13px;color:#6b7299;">${fmt(e.amount)}</div>
+          <div style="font-size:10px;color:#6b7299;">from Cash Flow</div>
+        </div>
+        <div>
+          <div class="fc-input-wrap">
+            <span class="fc-input-label">$</span>
+            <input type="number" class="fc-payment-input" value="${inputVal}" placeholder="${e.amount}" min="0" oninput="fcExpenseDefaultChange('${e.id}', this.value)">
+            <span class="fc-input-label">/mo</span>
+          </div>
+          ${hasOverrides ? `<div style="font-size:10px;color:#5c7cff;margin-top:3px;font-family:'DM Mono',monospace;">Has monthly variations</div>` : ''}
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#eef0f8;">${fmtK(def * MONTHS)}</div>
+          <div style="font-size:10px;color:#6b7299;">over ${MONTHS} months</div>
+        </div>
+      </div>
+      <div class="fc-expand-row">
+        <button class="fc-expand-btn" id="fc-expandbtn-exp-${e.id}" onclick="fcToggleMonthlyView('exp-${e.id}')">▼ Plan by Month</button>
+      </div>
+      <div class="fc-monthly-grid" id="fc-monthgrid-exp-${e.id}">
+        ${fcRenderExpenseMonthlyGrid(e, MONTHS, now)}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function _fcUpdateDebtRow(debtId, payment) {
@@ -1615,43 +1944,94 @@ function _fcUpdateGoalRow(goalId, monthly) {
 
 function fcRefreshResults() {
   const income = getMonthlyIncome();
-  const fixedExpenses = getMonthlyExpenses();
   const now = new Date();
   const MONTHS = parseInt(document.getElementById('fcMonths')?.value) || 36;
-  if (!state.forecast.debtPayments) state.forecast.debtPayments = {};
+  fcMigrateState();
   if (!state.forecast.goalContributions) state.forecast.goalContributions = {};
 
   const includedDebts = state.debts.filter(d => d.included);
-  const totalDebtPmts = includedDebts.reduce((s, d) => s + (state.forecast.debtPayments[d.id] || 0), 0);
   const totalGoalContribs = state.goals.reduce((s, g) => s + (state.forecast.goalContributions[g.id] || 0), 0);
   const generalSavings = state.forecast.generalSavings || 0;
-  const totalSavings = totalGoalContribs + generalSavings;
-  const totalOut = fixedExpenses + totalDebtPmts + totalSavings;
-  const surplus = income - totalOut;
+  const monthlySavings = totalGoalContribs + generalSavings;
 
-  // Budget bar
+  // Per-month simulation
+  let simDebts = includedDebts.map(d => ({ ...d }));
+  let simBaseline = includedDebts.map(d => ({ ...d }));
+  const debtMonthlyData = {};
+  const debtPayoffMonths = {};
+  for (const d of includedDebts) { debtMonthlyData[d.id] = []; debtPayoffMonths[d.id] = null; }
+
+  const perMonth = [];
+  const totalDebtData = [], savingsAccumData = [], baselineData = [];
+  let cumSavings = 0;
+
+  for (let m = 0; m < MONTHS; m++) {
+    // Baseline (minimums only)
+    for (const d of simBaseline) {
+      if (d.balance <= 0) continue;
+      d.balance = Math.max(0, d.balance + d.balance * d.apr / 100 / 12 - d.minPayment);
+    }
+    baselineData.push(simBaseline.reduce((s, d) => s + d.balance, 0));
+
+    // Planned expenses for this month
+    const fixedExp = state.expenses.reduce((s, e) => s + getPlannedExpenseAmount(e.id, m), 0);
+
+    // Plan simulation: apply interest then payment per debt
+    let monthDebtTotal = 0;
+    for (const sd of simDebts) {
+      if (sd.balance <= 0) {
+        debtMonthlyData[sd.id].push({ payment: 0, interest: 0, balanceAfter: 0 });
+        continue;
+      }
+      const interest = sd.balance * sd.apr / 100 / 12;
+      const balWithInt = sd.balance + interest;
+      const planned = getPlannedDebtPayment(sd.id, m);
+      const pmt = Math.min(planned, balWithInt);
+      sd.balance = Math.max(0, balWithInt - pmt);
+      monthDebtTotal += pmt;
+      debtMonthlyData[sd.id].push({ payment: pmt, interest, balanceAfter: sd.balance });
+      if (debtPayoffMonths[sd.id] === null && sd.balance <= 0.01) debtPayoffMonths[sd.id] = m + 1;
+    }
+
+    const surplus = income - fixedExp - monthDebtTotal - monthlySavings;
+    totalDebtData.push(simDebts.reduce((s, d) => s + d.balance, 0));
+    cumSavings += monthlySavings;
+    savingsAccumData.push(cumSavings);
+    perMonth.push({ income, fixedExp, debtPmt: monthDebtTotal, savings: monthlySavings, surplus });
+  }
+
+  // Update monthly grids with simulation results
+  fcUpdateMonthlyGrids(debtMonthlyData, MONTHS);
+
+  const interestSaved = Math.max(0, (baselineData[MONTHS-1]||0) - (totalDebtData[MONTHS-1]||0));
+
+  // Budget bar — use month-1 values
+  const m0 = perMonth[0] || { income, fixedExp: getMonthlyExpenses(), debtPmt: 0, savings: monthlySavings, surplus: 0 };
+  const totalOut0 = m0.fixedExp + m0.debtPmt + m0.savings;
+  const surplus0 = m0.income - totalOut0;
   const segs = [
-    { label: 'Fixed Expenses', amount: fixedExpenses, color: '#ff5b6b' },
-    { label: 'Debt Payments', amount: totalDebtPmts, color: '#ff9f43' },
-    { label: 'Savings', amount: totalSavings, color: '#22d47e' },
-    { label: surplus >= 0 ? 'Unallocated' : 'Over Budget', amount: Math.abs(surplus), color: surplus >= 0 ? '#5c7cff' : 'rgba(255,91,107,0.5)' }
+    { label: 'Expenses', amount: m0.fixedExp, color: '#ff5b6b' },
+    { label: 'Debt Payments', amount: m0.debtPmt, color: '#ff9f43' },
+    { label: 'Savings', amount: m0.savings, color: '#22d47e' },
+    { label: surplus0 >= 0 ? 'Unallocated' : 'Over Budget', amount: Math.abs(surplus0), color: surplus0 >= 0 ? '#5c7cff' : 'rgba(255,91,107,0.5)' }
   ].filter(s => s.amount > 0.01);
-  const barTotal = Math.max(income, totalOut, 1);
+  const barTotal = Math.max(income, totalOut0, 1);
   const barEl = document.getElementById('fcBudgetBar');
   const legEl = document.getElementById('fcBudgetLegend');
   const tagEl = document.getElementById('fcSurplusTag');
   if (barEl) barEl.innerHTML = segs.map(s => `<div style="width:${(s.amount/barTotal*100).toFixed(1)}%;background:${s.color};height:100%;" title="${s.label}: ${fmtK(s.amount)}"></div>`).join('');
   if (legEl) legEl.innerHTML = `<div class="fc-legend-item"><span class="fc-budget-dot" style="background:#6b7299"></span>Income:&nbsp;<span style="color:#22d47e;">${fmtK(income)}/mo</span></div>${segs.map(s=>`<div class="fc-legend-item"><span class="fc-budget-dot" style="background:${s.color}"></span>${s.label}:&nbsp;<span>${fmtK(s.amount)}</span></div>`).join('')}`;
-  if (tagEl) { tagEl.textContent = surplus >= 0 ? `+${fmtK(surplus)} free` : `${fmtK(Math.abs(surplus))} over`; tagEl.style.cssText = `background:${surplus>=0?'rgba(34,212,126,0.15)':'rgba(255,91,107,0.15)'};color:${surplus>=0?'#22d47e':'#ff5b6b'};font-size:11px;font-weight:700;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:99px;`; }
+  if (tagEl) { tagEl.textContent = surplus0 >= 0 ? `+${fmtK(surplus0)} free` : `${fmtK(Math.abs(surplus0))} over`; tagEl.style.cssText = `background:${surplus0>=0?'rgba(34,212,126,0.15)':'rgba(255,91,107,0.15)'};color:${surplus0>=0?'#22d47e':'#ff5b6b'};font-size:11px;font-weight:700;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:99px;`; }
 
   // Debt summary footer
   const minTotal = includedDebts.reduce((s, d) => s + d.minPayment, 0);
+  const m0DebtPmt = m0.debtPmt;
   const summaryEl = document.getElementById('fcDebtPlannerSummary');
   if (summaryEl) {
-    const extra = totalDebtPmts - minTotal;
+    const extra = m0DebtPmt - minTotal;
     summaryEl.innerHTML = `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
       <div style="font-size:11px;color:#6b7299;font-family:'DM Mono',monospace;">Minimums only: <span style="color:#ff9f43;">${fmtK(minTotal)}/mo</span></div>
-      <div style="font-size:11px;color:#6b7299;font-family:'DM Mono',monospace;">Your plan: <span style="color:#eef0f8;font-weight:700;">${fmtK(totalDebtPmts)}/mo</span></div>
+      <div style="font-size:11px;color:#6b7299;font-family:'DM Mono',monospace;">Your plan (Mo 1): <span style="color:#eef0f8;font-weight:700;">${fmtK(m0DebtPmt)}/mo</span></div>
       ${extra > 0.5 ? `<div style="font-size:11px;color:#22d47e;font-family:'DM Mono',monospace;">+${fmtK(extra)}/mo extra → faster payoff</div>` : extra < -0.5 ? `<div style="font-size:11px;color:#ff5b6b;font-family:'DM Mono',monospace;">⚠ ${fmtK(Math.abs(extra))} below minimums</div>` : ''}
     </div>`;
   }
@@ -1662,37 +2042,12 @@ function fcRefreshResults() {
   if (genAccumEl) genAccumEl.textContent = fmtK(generalSavings * MONTHS) + ' in ' + MONTHS + 'mo';
   if (genDateEl) genDateEl.textContent = generalSavings > 0 ? '+' + fmtK(generalSavings) + '/mo' : '—';
 
-  // Simulate months
-  let simDebts = includedDebts.map(d => ({ ...d }));
-  let simBaseline = includedDebts.map(d => ({ ...d }));
-  const debtPayoffMonths = {};
-  simDebts.forEach(d => { debtPayoffMonths[d.id] = null; });
-  let totalDebtData = [], savingsData = [], baselineData = [];
-  let cumSavings = 0;
-
-  for (let m = 0; m < MONTHS; m++) {
-    // Baseline (minimums only)
-    for (const d of simBaseline) {
-      if (d.balance <= 0) continue;
-      d.balance = Math.max(0, d.balance + d.balance * d.apr / 100 / 12 - d.minPayment);
-    }
-    baselineData.push(simBaseline.reduce((s, d) => s + d.balance, 0));
-    // Plan simulation
-    for (const d of simDebts) {
-      if (d.balance <= 0) continue;
-      d.balance += d.balance * d.apr / 100 / 12;
-      const pmt = Math.min(state.forecast.debtPayments[d.id] || d.minPayment, d.balance);
-      d.balance = Math.max(0, d.balance - pmt);
-    }
-    for (const d of simDebts) {
-      if (debtPayoffMonths[d.id] === null && d.balance <= 0.01) debtPayoffMonths[d.id] = m + 1;
-    }
-    totalDebtData.push(simDebts.reduce((s, d) => s + d.balance, 0));
-    cumSavings += totalSavings;
-    savingsData.push(cumSavings);
+  // Update payoff dates in debt planner rows
+  for (const d of includedDebts) {
+    const mo = debtPayoffMonths[d.id];
+    const el = document.getElementById('fc-payoff-' + d.id);
+    if (el && mo) { el.textContent = addMonths(now, mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); el.style.color = mo <= 12 ? '#22d47e' : mo <= 36 ? '#eef0f8' : '#6b7299'; }
   }
-
-  const interestSaved = Math.max(0, (baselineData[MONTHS-1]||0) - (totalDebtData[MONTHS-1]||0));
 
   // Debt-free estimate
   let debtFreeLabel = '—';
@@ -1700,59 +2055,91 @@ function fcRefreshResults() {
     if (totalDebtData[i] <= 0.01) { debtFreeLabel = addMonths(now, i+1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); break; }
   }
 
-  // Update payoff dates in existing planner rows (no re-render needed)
-  for (const d of includedDebts) {
-    const mo = debtPayoffMonths[d.id];
-    const el = document.getElementById('fc-payoff-' + d.id);
-    if (el && mo) { el.textContent = addMonths(now, mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); el.style.color = mo <= 12 ? '#22d47e' : mo <= 36 ? '#eef0f8' : '#6b7299'; }
-  }
+  // Average monthly surplus for KPI
+  const avgSurplus = perMonth.length ? perMonth.reduce((s, m) => s + m.surplus, 0) / perMonth.length : surplus0;
 
   // KPIs
-  document.getElementById('fcKpiSavings').textContent = fmtK(savingsData[MONTHS-1]||0);
+  document.getElementById('fcKpiSavings').textContent = fmtK(savingsAccumData[MONTHS-1]||0);
   document.getElementById('fcKpiSavingsSub').textContent = 'over ' + MONTHS + ' months';
   document.getElementById('fcKpiDebtFree').textContent = debtFreeLabel;
   const surplusKpi = document.getElementById('fcKpiSurplus');
-  surplusKpi.textContent = (surplus < 0 ? '-' : '') + fmtK(Math.abs(surplus));
-  surplusKpi.className = 'kpi-value ' + (surplus >= 0 ? 'green' : 'red');
-  document.getElementById('fcKpiSurplusSub').textContent = surplus >= 0 ? 'income minus all planned spending' : 'over budget — reduce somewhere';
-  document.getElementById('fcKpiSurplusCard').className = 'kpi ' + (surplus >= 0 ? 'green' : 'red');
+  surplusKpi.textContent = (surplus0 < 0 ? '-' : '') + fmtK(Math.abs(surplus0));
+  surplusKpi.className = 'kpi-value ' + (surplus0 >= 0 ? 'green' : 'red');
+  document.getElementById('fcKpiSurplusSub').textContent = surplus0 >= 0 ? 'month 1 · income minus all planned spending' : 'over budget month 1 — reduce somewhere';
+  document.getElementById('fcKpiSurplusCard').className = 'kpi ' + (surplus0 >= 0 ? 'green' : 'red');
   document.getElementById('fcKpiInterestSaved').textContent = fmtK(interestSaved);
 
-  // Chart
+  // ── New Stacked Bar Chart: Income up, Expenses down, Surplus colored ──
   destroyChart('forecast');
   const ctx = document.getElementById('forecastChart')?.getContext('2d');
   if (ctx) {
     const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(now, i+1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+    const incomeArr   = perMonth.map(d => d.income);
+    const expenseArr  = perMonth.map(d => -(d.fixedExp));
+    const debtArr     = perMonth.map(d => -(d.debtPmt));
+    const savingsArr  = perMonth.map(d => -(d.savings));
+    const surplusArr  = perMonth.map(d => d.surplus);
+    const surplusColors = surplusArr.map(v => v >= 0 ? 'rgba(34,212,126,0.75)' : 'rgba(255,91,107,0.75)');
+    const surplusBorder = surplusArr.map(v => v >= 0 ? '#22d47e' : '#ff5b6b');
+
     charts['forecast'] = new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets: [
-        { label: 'Cumulative Savings', data: savingsData, borderColor: '#22d47e', backgroundColor: 'rgba(34,212,126,0.08)', fill: true, tension: .4, pointRadius: 0, borderWidth: 2 },
-        { label: 'Total Debt', data: totalDebtData, borderColor: '#ff5b6b', backgroundColor: 'rgba(255,91,107,0.08)', fill: true, tension: .4, pointRadius: 0, borderWidth: 2 }
-      ]},
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Income',        data: incomeArr,   backgroundColor: 'rgba(34,212,126,0.75)',  borderColor: '#22d47e',  borderWidth: 0, stack: 'pos' },
+          { label: 'Expenses',      data: expenseArr,  backgroundColor: 'rgba(255,91,107,0.75)',  borderColor: '#ff5b6b',  borderWidth: 0, stack: 'neg' },
+          { label: 'Debt Payments', data: debtArr,     backgroundColor: 'rgba(255,159,67,0.75)',  borderColor: '#ff9f43',  borderWidth: 0, stack: 'neg' },
+          { label: 'Savings',       data: savingsArr,  backgroundColor: 'rgba(92,124,255,0.75)',  borderColor: '#5c7cff',  borderWidth: 0, stack: 'neg' },
+          { label: 'Surplus',       data: surplusArr,  backgroundColor: surplusColors, borderColor: surplusBorder, borderWidth: 1, stack: 'surp' }
+        ]
+      },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: true, position: 'top' }, tooltip: { callbacks: { label: c => ' ' + fmtK(c.raw) } } },
-        scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 12 } }, y: { ticks: { callback: v => fmtK(v) }, grid: { color: 'rgba(255,255,255,0.04)' } } }
+        plugins: {
+          legend: { display: true, position: 'top', labels: { color: '#6b7299', font: { size: 11 }, usePointStyle: true, pointStyleWidth: 10 } },
+          tooltip: {
+            callbacks: {
+              label: c => {
+                const v = c.raw;
+                return ` ${c.dataset.label}: ${v < 0 ? '-' : ''}${fmtK(Math.abs(v))}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { maxTicksLimit: 12, color: '#6b7299' } },
+          y: { stacked: true, ticks: { callback: v => fmtK(v), color: '#6b7299' }, grid: { color: 'rgba(255,255,255,0.04)' },
+               title: { display: true, text: '← Outflows  |  Income →', color: '#6b7299', font: { size: 10 } } }
+        }
       }
     });
   }
 
-  // Month-by-month table
+  // Month-by-month table (5 columns)
   const tbl = document.getElementById('forecastTable');
   if (tbl) {
-    tbl.innerHTML = `<div class="fc-table-row"><div class="fc-table-header">Month</div><div class="fc-table-header" style="text-align:right;">Debt Remaining</div><div class="fc-table-header" style="text-align:right;">Cumul. Savings</div><div class="fc-table-header" style="text-align:right;">Monthly Surplus</div></div>` +
+    const colStyle = 'grid-template-columns:1.2fr 1fr 1fr 1fr 1fr;';
+    tbl.innerHTML = `<div class="fc-table-row" style="${colStyle}"><div class="fc-table-header">Month</div><div class="fc-table-header" style="text-align:right;">Income</div><div class="fc-table-header" style="text-align:right;">Outflows</div><div class="fc-table-header" style="text-align:right;">Debt Remaining</div><div class="fc-table-header" style="text-align:right;">Surplus</div></div>` +
     Array.from({ length: MONTHS }, (_, i) => {
-      const d = totalDebtData[i]||0, s = savingsData[i]||0;
-      return `<div class="fc-table-row"><div style="color:#6b7299;">${addMonths(now,i+1).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div><div style="text-align:right;color:${d<=0.01?'#22d47e':'#ff5b6b'};font-family:'DM Mono',monospace;">${d<=0.01?'✓ Paid off':fmtK(d)}</div><div style="text-align:right;color:#22d47e;font-family:'DM Mono',monospace;">${fmtK(s)}</div><div style="text-align:right;color:${surplus>=0?'#5c7cff':'#ff5b6b'};font-family:'DM Mono',monospace;">${surplus>=0?'+':''}${fmtK(surplus)}</div></div>`;
+      const md = perMonth[i] || {};
+      const debt = totalDebtData[i] || 0;
+      const totalOut = (md.fixedExp||0) + (md.debtPmt||0) + (md.savings||0);
+      const surp = md.surplus || 0;
+      return `<div class="fc-table-row" style="${colStyle}">
+        <div style="color:#6b7299;">${addMonths(now,i+1).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>
+        <div style="text-align:right;color:#22d47e;font-family:'DM Mono',monospace;">${fmtK(md.income||income)}</div>
+        <div style="text-align:right;color:#ff5b6b;font-family:'DM Mono',monospace;">${fmtK(totalOut)}</div>
+        <div style="text-align:right;color:${debt<=0.01?'#22d47e':'#ff5b6b'};font-family:'DM Mono',monospace;">${debt<=0.01?'✓ Paid off':fmtK(debt)}</div>
+        <div style="text-align:right;color:${surp>=0?'#5c7cff':'#ff5b6b'};font-family:'DM Mono',monospace;">${surp>=0?'+':''}${fmtK(surp)}</div>
+      </div>`;
     }).join('');
   }
   saveToStorage();
 }
 
 function renderForecast() {
-  // Initialize state safely
-  if (!state.forecast) state.forecast = {};
-  if (!state.forecast.debtPayments) state.forecast.debtPayments = {};
+  fcMigrateState();
   if (!state.forecast.goalContributions) state.forecast.goalContributions = {};
   if (!state.forecast.generalSavings) state.forecast.generalSavings = 0;
 
@@ -1760,63 +2147,80 @@ function renderForecast() {
   const fcMonthsEl = document.getElementById('fcMonths');
   if (fcMonthsEl && state.forecast.forecastMonths) fcMonthsEl.value = state.forecast.forecastMonths;
   const MONTHS = parseInt(fcMonthsEl?.value) || 36;
+  const now = new Date();
 
   const includedDebts = state.debts.filter(d => d.included);
 
-  // Initialize default payments for any debt not yet set
+  // Initialize defaults for any debt/goal not yet set
   for (const d of includedDebts) {
-    if (state.forecast.debtPayments[d.id] === undefined) state.forecast.debtPayments[d.id] = d.minPayment;
+    if (!state.forecast.debtPayments[d.id]) {
+      state.forecast.debtPayments[d.id] = { default: d.minPayment, months: {} };
+    }
   }
   for (const g of state.goals) {
     if (state.forecast.goalContributions[g.id] === undefined) state.forecast.goalContributions[g.id] = g.monthly || 0;
   }
 
-  // Render debt planner rows
+  // Render debt planner rows with monthly grid expand
   const dpEl = document.getElementById('fcDebtPlanner');
   if (dpEl) {
     if (includedDebts.length === 0) {
       dpEl.innerHTML = `<div class="empty"><div class="empty-icon">💳</div><div class="empty-text">No debt accounts added yet. Go to My Accounts to add them.</div></div>`;
     } else {
       dpEl.innerHTML = includedDebts.map(d => {
-        const payment = state.forecast.debtPayments[d.id] ?? d.minPayment;
+        const pData = state.forecast.debtPayments[d.id];
+        const payment = typeof pData === 'object' ? (pData.default !== undefined ? pData.default : d.minPayment) : (pData || d.minPayment);
         const mo = monthsToPayoff(d.balance, d.apr, payment);
         const interest = totalInterest(d.balance, d.apr, payment);
-        const payoffText = payment <= 0 ? 'No payment' : !isFinite(mo) ? 'Never ⚠' : addMonths(new Date(), mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        const payoffText = payment <= 0 ? 'No payment' : !isFinite(mo) ? 'Never ⚠' : addMonths(now, mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
         const payoffColor = payment <= 0 ? '#6b7299' : !isFinite(mo) ? '#ff5b6b' : mo <= 12 ? '#22d47e' : mo <= 36 ? '#eef0f8' : '#6b7299';
         const interestColor = interest > 5000 ? '#ff5b6b' : interest > 500 ? '#ff9f43' : '#22d47e';
         const isLow = payment > 0 && payment < d.minPayment;
-        return `<div class="fc-planner-row">
-          <div class="fc-planner-name">
-            <div class="fc-debt-dot" style="background:${d.color};width:12px;height:12px;border-radius:50%;flex-shrink:0;"></div>
+        const hasMonthly = typeof pData === 'object' && pData?.months && Object.keys(pData.months).length > 0;
+        return `<div class="fc-debt-container">
+          <div class="fc-planner-row" style="border-bottom:none;">
+            <div class="fc-planner-name">
+              <div style="background:${d.color};width:12px;height:12px;border-radius:50%;flex-shrink:0;"></div>
+              <div>
+                <div style="font-size:13px;font-weight:700;">${d.name}</div>
+                <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;">${d.type} · Min: ${fmt(d.minPayment)}/mo</div>
+              </div>
+            </div>
             <div>
-              <div style="font-size:13px;font-weight:700;">${d.name}</div>
-              <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;">${d.type} · Min: ${fmt(d.minPayment)}/mo</div>
+              <div style="font-family:'DM Mono',monospace;font-size:14px;color:#ff5b6b;">${fmtK(d.balance)}</div>
+              <div style="font-size:11px;color:${d.apr > 20 ? '#ff5b6b' : d.apr > 10 ? '#ff9f43' : '#6b7299'};font-family:'DM Mono',monospace;">${d.apr}% APR</div>
+            </div>
+            <div>
+              <div class="fc-input-wrap">
+                <span class="fc-input-label">$</span>
+                <input type="number" class="fc-payment-input" value="${payment || ''}" placeholder="${d.minPayment || '0'}" min="0" oninput="fcDebtInputChange('${d.id}', this.value)" title="Default payment applied to all months (override in Monthly Plan below)">
+                <span class="fc-input-label">/mo</span>
+              </div>
+              <div class="fc-warn" id="fc-warn-${d.id}">${isLow ? '⚠ Below minimum' : ''}</div>
+              ${hasMonthly ? `<div style="font-size:10px;color:#5c7cff;margin-top:2px;font-family:'DM Mono',monospace;">Has monthly variations</div>` : ''}
+            </div>
+            <div>
+              <div id="fc-payoff-${d.id}" style="font-size:13px;font-weight:700;color:${payoffColor};">${payoffText}</div>
+              <div style="font-size:10px;color:#6b7299;">payoff date</div>
+            </div>
+            <div>
+              <div id="fc-interest-${d.id}" style="font-size:13px;font-weight:700;color:${interestColor};">${isFinite(interest) && interest >= 0 ? fmtK(interest) : '—'}</div>
+              <div style="font-size:10px;color:#6b7299;">total interest</div>
             </div>
           </div>
-          <div>
-            <div style="font-family:'DM Mono',monospace;font-size:14px;color:#ff5b6b;">${fmtK(d.balance)}</div>
-            <div style="font-size:11px;color:${d.apr > 20 ? '#ff5b6b' : d.apr > 10 ? '#ff9f43' : '#6b7299'};font-family:'DM Mono',monospace;">${d.apr}% APR</div>
+          <div class="fc-expand-row">
+            <button class="fc-expand-btn" id="fc-expandbtn-${d.id}" onclick="fcToggleMonthlyView('${d.id}')">▼ Plan by Month</button>
           </div>
-          <div>
-            <div class="fc-input-wrap">
-              <span class="fc-input-label">$</span>
-              <input type="number" class="fc-payment-input" value="${payment || ''}" placeholder="${d.minPayment || '0'}" min="0" oninput="fcDebtInputChange('${d.id}', this.value)">
-              <span class="fc-input-label">/mo</span>
-            </div>
-            <div class="fc-warn" id="fc-warn-${d.id}">${isLow ? '⚠ Below minimum' : ''}</div>
-          </div>
-          <div>
-            <div id="fc-payoff-${d.id}" style="font-size:13px;font-weight:700;color:${payoffColor};">${payoffText}</div>
-            <div style="font-size:10px;color:#6b7299;">payoff date</div>
-          </div>
-          <div>
-            <div id="fc-interest-${d.id}" style="font-size:13px;font-weight:700;color:${interestColor};">${isFinite(interest) && interest >= 0 ? fmtK(interest) : '—'}</div>
-            <div style="font-size:10px;color:#6b7299;">total interest</div>
+          <div class="fc-monthly-grid" id="fc-monthgrid-${d.id}">
+            ${fcRenderDebtMonthlyGrid(d, MONTHS, now)}
           </div>
         </div>`;
       }).join('');
     }
   }
+
+  // Render expense planner
+  renderFcExpensePlanner(MONTHS, now);
 
   // Render savings planner rows
   const spEl = document.getElementById('fcSavingsPlanner');
@@ -1828,7 +2232,7 @@ function renderForecast() {
         const monthly = state.forecast.goalContributions[g.id] || 0;
         const needed = Math.max(0, g.target - g.saved);
         const moToReach = monthly > 0 ? Math.ceil(needed / monthly) : Infinity;
-        const reachText = !isFinite(moToReach) ? 'Add more' : addMonths(new Date(), moToReach).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        const reachText = !isFinite(moToReach) ? 'Add more' : addMonths(now, moToReach).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
         const reachColor = !isFinite(moToReach) ? '#6b7299' : moToReach <= MONTHS ? '#22d47e' : '#ff9f43';
         const currPct = Math.min(100, (g.saved / g.target * 100)).toFixed(1);
         const projPct = Math.min(100, ((g.saved + monthly * MONTHS) / g.target * 100)).toFixed(1);
