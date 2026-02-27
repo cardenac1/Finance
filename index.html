@@ -404,7 +404,7 @@ select.form-input option{background:var(–surface2);}
     <div class="card-title" style="margin-bottom:0;">Monthly Budget Breakdown</div>
     <div id="dashBudgetTag" style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:99px;"></div>
   </div>
-  <div class="fc-budget-bar" id="dashBudgetBar" style="height:26px;border-radius:10px;margin:0 0 10px;"></div>
+  <div id="dashBudgetBar" style="margin:0 0 10px;"></div>
   <div class="fc-budget-legend" id="dashBudgetLegend"></div>
 </div>
 
@@ -453,8 +453,8 @@ select.form-input option{background:var(–surface2);}
         <div class="page-subtitle">Track your monthly income and expenses</div>
       </div>
       <div class="header-actions">
-        <button class="btn btn-primary" onclick="openModal('incomModal')">+ Add Income</button>
-        <button class="btn btn-ghost" onclick="openModal('expenseModal')">+ Add Expense</button>
+        <button class="btn btn-success" onclick="openModal('incomModal')">+ Add Income</button>
+        <button class="btn btn-danger" onclick="openModal('expenseModal')">+ Add Expense</button>
       </div>
     </div>
 
@@ -478,14 +478,14 @@ select.form-input option{background:var(–surface2);}
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <div class="card-title" style="margin:0;">Income Sources</div>
-      <button class="btn btn-sm btn-primary" onclick="openModal('incomeModal')">+ Add</button>
+      <button class="btn btn-sm btn-success" onclick="openModal('incomeModal')">+ Add</button>
     </div>
     <div id="incomeList"><div class="empty"><div class="empty-icon">💰</div><div class="empty-text">No income added yet</div></div></div>
   </div>
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <div class="card-title" style="margin:0;">Expenses</div>
-      <button class="btn btn-sm btn-ghost" onclick="openModal('expenseModal')">+ Add</button>
+      <button class="btn btn-sm btn-danger" onclick="openModal('expenseModal')">+ Add</button>
     </div>
     <div id="expenseList"><div class="empty"><div class="empty-icon">💳</div><div class="empty-text">No expenses added yet</div></div></div>
   </div>
@@ -641,6 +641,8 @@ select.form-input option{background:var(–surface2);}
         <div class="page-subtitle">Type your planned payment for each account — see payoff dates &amp; savings update live</div>
       </div>
       <div class="header-actions">
+        <button class="btn" onclick="generateSmartPlan()" style="background:linear-gradient(135deg,#5c7cff,#a78bfa);color:#fff;font-weight:700;font-size:12px;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;" title="Auto-fill payments using avalanche method (highest APR paid first)">✨ Smart Plan</button>
+        <button class="btn" onclick="fcClearSmartPlan()" style="background:rgba(107,114,153,0.15);color:#6b7299;font-size:12px;padding:8px 12px;border:1px solid rgba(107,114,153,0.3);border-radius:8px;cursor:pointer;" title="Reset all debt payments to minimums">Reset Plan</button>
         <select class="form-input" id="fcMonths" onchange="fcSaveMonths(this.value)" style="padding:8px 12px;font-size:12px;width:auto;">
           <option value="12">12 Months</option>
           <option value="24">24 Months</option>
@@ -1111,31 +1113,24 @@ function renderDashboard() {
   document.getElementById('kpiDebtSub').textContent = state.debts.filter(d=>d.included).length + ' accounts tracked';
 
   // Monthly Budget Breakdown bar (dashboard)
-  const dashBarTotal = Math.max(income, expenses + minP, 1);
+  // Scale = income so all bars are proportional to income
+  const dashBarTotal = Math.max(income, 1);
   const dashSegs = [
     { label: 'Fixed Expenses', amount: expenses, color: '#ff5b6b' },
     { label: 'Debt Payments', amount: minP, color: '#ff9f43' },
-    { label: surplus >= 0 ? 'Net Surplus' : 'Over Budget', amount: Math.abs(surplus), color: surplus >= 0 ? '#5c7cff' : 'rgba(255,91,107,0.5)' }
+    { label: surplus >= 0 ? 'Net Surplus' : 'Over Budget', amount: Math.abs(surplus), color: surplus >= 0 ? '#22d47e' : '#ff5b6b' }
   ].filter(s => s.amount > 0.01);
   const dashBarEl = document.getElementById('dashBudgetBar');
   const dashLegEl = document.getElementById('dashBudgetLegend');
   const dashTagEl = document.getElementById('dashBudgetTag');
-  if (dashBarEl) dashBarEl.innerHTML =
-    // Income bar (green, full width relative to dashBarTotal)
-    `<div style="width:100%;margin-bottom:5px;">
-       <div style="font-size:10px;color:#22d47e;font-family:'DM Mono',monospace;font-weight:700;margin-bottom:3px;letter-spacing:.5px;">INCOME</div>
-       <div style="display:flex;height:10px;border-radius:6px;overflow:hidden;">
-         <div style="width:${(income/dashBarTotal*100).toFixed(1)}%;background:#22d47e;height:100%;" title="Income: ${fmt(income)}"></div>
-         <div style="flex:1;background:rgba(255,255,255,0.04);height:100%;"></div>
-       </div>
-     </div>` +
-    // Allocation bar
-    `<div>
-       <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;font-weight:700;margin-bottom:3px;letter-spacing:.5px;">ALLOCATION</div>
-       <div style="display:flex;height:22px;border-radius:8px;overflow:hidden;">
-         ${dashSegs.map(s => `<div style="width:${(s.amount/dashBarTotal*100).toFixed(1)}%;background:${s.color};height:100%;" title="${s.label}: ${fmt(s.amount)}"></div>`).join('')}
-       </div>
-     </div>`;
+  if (dashBarEl) {
+    // Each segment width = amount / income * 100% — they sum to 100% since expenses+debt+surplus=income
+    const segHtml = dashSegs.map(s => {
+      const w = Math.min(100, (s.amount / dashBarTotal * 100)).toFixed(2);
+      return `<div style="width:${w}%;background:${s.color};height:100%;min-width:${s.amount>0?'2px':'0'};" title="${s.label}: ${fmt(s.amount)}"></div>`;
+    }).join('');
+    dashBarEl.innerHTML = `<div style="display:flex;height:28px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,0.04);">${segHtml}</div>`;
+  }
   if (dashLegEl) dashLegEl.innerHTML = `<div class="fc-legend-item"><span class="fc-budget-dot" style="background:#22d47e"></span>Income:&nbsp;<span style="color:#22d47e;">${fmt(income)}/mo</span></div>${dashSegs.map(s=>`<div class="fc-legend-item"><span class="fc-budget-dot" style="background:${s.color}"></span>${s.label}:&nbsp;<span>${fmt(s.amount)}</span></div>`).join('')}`;
   if (dashTagEl) { dashTagEl.textContent = surplus >= 0 ? `+${fmt(surplus)} surplus` : `${fmt(Math.abs(surplus))} over`; dashTagEl.style.cssText = `background:${surplus>=0?'rgba(34,212,126,0.15)':'rgba(255,91,107,0.15)'};color:${surplus>=0?'#22d47e':'#ff5b6b'};font-size:11px;font-weight:700;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:99px;`; }
 
@@ -1907,14 +1902,14 @@ function fcToggleMonthlyView(id) {
 }
 
 // ── Monthly grid renderers ─────────────────────────────────────────────
-function fcRenderDebtMonthlyGrid(d, MONTHS, now) {
+function fcRenderDebtMonthlyGrid(d, MONTHS, fcStart) {
   fcMigrateState();
   const pData = state.forecast.debtPayments[d.id] || { default: d.minPayment, months: {} };
   const def = typeof pData === 'object' ? (pData.default !== undefined ? pData.default : d.minPayment) : pData;
   const overrides = (typeof pData === 'object' && pData.months) ? pData.months : {};
 
   const headers = Array.from({ length: MONTHS }, (_, i) =>
-    `<th>${addMonths(now, i + 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
+    `<th>${addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
   ).join('');
 
   const paymentCells = Array.from({ length: MONTHS }, (_, i) => {
@@ -1947,14 +1942,14 @@ function fcRenderDebtMonthlyGrid(d, MONTHS, now) {
   </div>`;
 }
 
-function fcRenderExpenseMonthlyGrid(e, MONTHS, now) {
+function fcRenderExpenseMonthlyGrid(e, MONTHS, fcStart) {
   fcMigrateState();
   const pData = state.forecast.expensePlanned?.[e.id] || { default: e.amount, months: {} };
   const def = typeof pData === 'object' ? (pData.default !== undefined ? pData.default : e.amount) : pData;
   const overrides = (typeof pData === 'object' && pData.months) ? pData.months : {};
 
   const headers = Array.from({ length: MONTHS }, (_, i) =>
-    `<th>${addMonths(now, i + 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
+    `<th>${addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
   ).join('');
 
   const amtCells = Array.from({ length: MONTHS }, (_, i) => {
@@ -1975,14 +1970,14 @@ function fcRenderExpenseMonthlyGrid(e, MONTHS, now) {
   </div>`;
 }
 
-function fcRenderGoalMonthlyGrid(g, MONTHS, now) {
+function fcRenderGoalMonthlyGrid(g, MONTHS, fcStart) {
   fcMigrateState();
   const pData = state.forecast.goalContributions[g.id] || { default: 0, months: {} };
   const def = typeof pData === 'object' ? (pData.default !== undefined ? pData.default : 0) : pData;
   const overrides = (typeof pData === 'object' && pData.months) ? pData.months : {};
 
   const headers = Array.from({ length: MONTHS }, (_, i) =>
-    `<th>${addMonths(now, i + 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
+    `<th>${addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
   ).join('');
 
   const cells = Array.from({ length: MONTHS }, (_, i) => {
@@ -2003,12 +1998,12 @@ function fcRenderGoalMonthlyGrid(g, MONTHS, now) {
   </div>`;
 }
 
-function fcRenderGeneralSavingsGrid(MONTHS, now) {
+function fcRenderGeneralSavingsGrid(MONTHS, fcStart) {
   const def = typeof state.forecast.generalSavings === 'number' ? state.forecast.generalSavings : 0;
   const overrides = state.forecast.generalSavingsMonths || {};
 
   const headers = Array.from({ length: MONTHS }, (_, i) =>
-    `<th>${addMonths(now, i + 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
+    `<th>${addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
   ).join('');
 
   const cells = Array.from({ length: MONTHS }, (_, i) => {
@@ -2047,7 +2042,7 @@ function fcUpdateMonthlyGrids(debtMonthlyData, MONTHS) {
   }
 }
 
-function renderFcExpensePlanner(MONTHS, now) {
+function renderFcExpensePlanner(MONTHS, fcStart) {
   const epEl = document.getElementById('fcExpensePlanner');
   if (!epEl) return;
   fcMigrateState();
@@ -2090,7 +2085,7 @@ function renderFcExpensePlanner(MONTHS, now) {
         <button class="fc-expand-btn" id="fc-expandbtn-exp-${e.id}" onclick="fcToggleMonthlyView('exp-${e.id}')">▼ Plan by Month</button>
       </div>
       <div class="fc-monthly-grid" id="fc-monthgrid-exp-${e.id}">
-        ${fcRenderExpenseMonthlyGrid(e, MONTHS, now)}
+        ${fcRenderExpenseMonthlyGrid(e, MONTHS, fcStart)}
       </div>
     </div>`;
   }).join('');
@@ -2108,7 +2103,8 @@ function _fcUpdateDebtRow(debtId, payment) {
     if (payment <= 0) { payoffEl.textContent = 'No payment'; payoffEl.style.color = '#6b7299'; }
     else if (!isFinite(mo)) { payoffEl.textContent = 'Never ⚠'; payoffEl.style.color = '#ff5b6b'; }
     else {
-      payoffEl.textContent = addMonths(new Date(), mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      const _d = new Date(); const _fs = new Date(_d.getFullYear(), _d.getMonth() + 1, 1);
+      payoffEl.textContent = addMonths(_fs, mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       payoffEl.style.color = mo <= 12 ? '#22d47e' : mo <= 36 ? '#eef0f8' : '#6b7299';
     }
   }
@@ -2131,14 +2127,129 @@ function _fcUpdateGoalRow(goalId, monthly) {
   const projEl = document.getElementById('fc-gproj-' + goalId);
   if (reachEl) {
     if (!isFinite(moToReach)) { reachEl.textContent = 'Add more'; reachEl.style.color = '#6b7299'; }
-    else { reachEl.textContent = addMonths(new Date(), moToReach).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); reachEl.style.color = moToReach <= MONTHS ? '#22d47e' : '#ff9f43'; }
+    else { const _d = new Date(); const _fs = new Date(_d.getFullYear(), _d.getMonth() + 1, 1); reachEl.textContent = addMonths(_fs, moToReach).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); reachEl.style.color = moToReach <= MONTHS ? '#22d47e' : '#ff9f43'; }
   }
   if (projEl) { projEl.style.width = Math.min(100, ((g.saved + monthly * MONTHS) / g.target * 100)).toFixed(1) + '%'; }
+}
+
+// ── Smart Plan (Avalanche Algorithm) ───────────────────────────────────
+function generateSmartPlan() {
+  fcMigrateState();
+  const income = getMonthlyIncome();
+  const MONTHS = parseInt(document.getElementById('fcMonths')?.value) || 36;
+  const includedDebts = state.debts.filter(d => d.included);
+  if (includedDebts.length === 0) { showToast('No debts to plan — add debt accounts first.', 'warn'); return; }
+
+  const fixedExpenses = state.expenses.reduce((s, e) => {
+    const p = state.forecast.expensePlanned?.[e.id];
+    const def = (typeof p === 'object' && p) ? (p.default !== undefined ? p.default : e.amount) : (typeof p === 'number' ? p : e.amount);
+    return s + def;
+  }, 0);
+  const goalSavings = state.goals.reduce((s, g) => {
+    const p = state.forecast.goalContributions?.[g.id];
+    const def = typeof p === 'object' ? (p?.default || 0) : (p || 0);
+    return s + def;
+  }, 0);
+  const genSavings = typeof state.forecast.generalSavings === 'number' ? state.forecast.generalSavings : 0;
+  const fixedSavings = goalSavings + genSavings;
+  const totalMin = includedDebts.reduce((s, d) => s + d.minPayment, 0);
+  const availableBudget = income - fixedExpenses - fixedSavings;
+
+  if (availableBudget <= totalMin) {
+    showToast('Not enough surplus to apply smart plan — income may be too low.', 'warn');
+    return;
+  }
+
+  // Avalanche: sort by APR descending, cascade surplus to highest-APR debt
+  let simDebts = includedDebts.map(d => ({ id: d.id, balance: d.balance, apr: d.apr, minPayment: d.minPayment, name: d.name }));
+  // Initialize per-month payment storage
+  const planPayments = {};
+  for (const d of simDebts) { planPayments[d.id] = {}; }
+
+  for (let m = 0; m < MONTHS; m++) {
+    // Remaining debts still owed
+    const activeDebts = simDebts.filter(d => d.balance > 0.01);
+    if (activeDebts.length === 0) break;
+
+    // Sort by APR descending for avalanche
+    activeDebts.sort((a, b) => b.apr - a.apr);
+
+    let remaining = availableBudget;
+
+    // Assign minimums to all active debts first
+    const payments = {};
+    for (const d of activeDebts) {
+      const pmt = Math.min(d.minPayment, d.balance + d.balance * d.apr / 100 / 12);
+      payments[d.id] = pmt;
+      remaining -= pmt;
+    }
+
+    // Cascade remaining surplus to highest-APR debt
+    for (const d of activeDebts) {
+      if (remaining <= 0.005) break;
+      const interest = d.balance * d.apr / 100 / 12;
+      const balWithInt = d.balance + interest;
+      const extra = Math.min(remaining, balWithInt - payments[d.id]);
+      if (extra > 0) {
+        payments[d.id] += extra;
+        remaining -= extra;
+      }
+    }
+
+    // Simulate balances
+    for (const d of simDebts) {
+      if (d.balance <= 0.01) { planPayments[d.id][String(m)] = 0; continue; }
+      const interest = d.balance * d.apr / 100 / 12;
+      const balWithInt = d.balance + interest;
+      const pmt = Math.min(payments[d.id] || d.minPayment, balWithInt);
+      planPayments[d.id][String(m)] = Math.round(pmt * 100) / 100;
+      d.balance = Math.max(0, balWithInt - pmt);
+    }
+  }
+
+  // Apply to state (clear existing overrides and set smart plan months)
+  for (const d of includedDebts) {
+    const months = planPayments[d.id];
+    state.forecast.debtPayments[d.id] = { default: d.minPayment, months };
+  }
+  saveToStorage();
+  renderForecast();
+  showToast('Smart Plan applied — avalanche method (highest APR first)', 'success');
+}
+
+function showToast(msg, type) {
+  let t = document.getElementById('fcToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'fcToast';
+    t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;transition:opacity .3s;pointer-events:none;font-family:"DM Sans",sans-serif;';
+    document.body.appendChild(t);
+  }
+  const colors = { success: { bg: 'rgba(34,212,126,0.15)', border: '#22d47e', color: '#22d47e' }, warn: { bg: 'rgba(255,159,67,0.15)', border: '#ff9f43', color: '#ff9f43' }, error: { bg: 'rgba(255,91,107,0.15)', border: '#ff5b6b', color: '#ff5b6b' } };
+  const c = colors[type] || colors.success;
+  t.style.background = c.bg;
+  t.style.border = '1px solid ' + c.border;
+  t.style.color = c.color;
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 3500);
+}
+
+function fcClearSmartPlan() {
+  fcMigrateState();
+  for (const d of state.debts.filter(d => d.included)) {
+    state.forecast.debtPayments[d.id] = { default: d.minPayment, months: {} };
+  }
+  saveToStorage();
+  renderForecast();
+  showToast('Smart Plan cleared — back to defaults', 'warn');
 }
 
 function fcRefreshResults() {
   const income = getMonthlyIncome();
   const now = new Date();
+  const fcStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const MONTHS = parseInt(document.getElementById('fcMonths')?.value) || 36;
   fcMigrateState();
   if (!state.forecast.goalContributions) state.forecast.goalContributions = {};
@@ -2250,13 +2361,13 @@ function fcRefreshResults() {
   for (const d of includedDebts) {
     const mo = debtPayoffMonths[d.id];
     const el = document.getElementById('fc-payoff-' + d.id);
-    if (el && mo) { el.textContent = addMonths(now, mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); el.style.color = mo <= 12 ? '#22d47e' : mo <= 36 ? '#eef0f8' : '#6b7299'; }
+    if (el && mo) { el.textContent = addMonths(fcStart, mo - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); el.style.color = mo <= 12 ? '#22d47e' : mo <= 36 ? '#eef0f8' : '#6b7299'; }
   }
 
   // Debt-free estimate
   let debtFreeLabel = '—';
   for (let i = 0; i < totalDebtData.length; i++) {
-    if (totalDebtData[i] <= 0.01) { debtFreeLabel = addMonths(now, i+1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); break; }
+    if (totalDebtData[i] <= 0.01) { debtFreeLabel = addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); break; }
   }
 
   // Average monthly surplus for KPI
@@ -2277,7 +2388,7 @@ function fcRefreshResults() {
   destroyChart('forecast');
   const ctx = document.getElementById('forecastChart')?.getContext('2d');
   if (ctx) {
-    const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(now, i+1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+    const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
     const incomeArr   = perMonth.map(d => d.income);
     const expenseArr  = perMonth.map(d => -(d.fixedExp));
     const debtArr     = perMonth.map(d => -(d.debtPmt));
@@ -2324,7 +2435,7 @@ function fcRefreshResults() {
   destroyChart('debtProgress');
   const ctxDP = document.getElementById('debtProgressChart')?.getContext('2d');
   if (ctxDP) {
-    const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(now, i+1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+    const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
     const datasets = [];
     if (debtProgressSeries.length > 0) {
       // Individual debt lines
@@ -2364,7 +2475,7 @@ function fcRefreshResults() {
   destroyChart('savingsSurplus');
   const ctxSS = document.getElementById('savingsSurplusChart')?.getContext('2d');
   if (ctxSS) {
-    const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(now, i+1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+    const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(fcStart, i).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
     const surplusArr2 = perMonth.map(d => d.surplus);
     const surplusColors2 = surplusArr2.map(v => v >= 0 ? 'rgba(92,124,255,0.7)' : 'rgba(255,91,107,0.7)');
     charts['savingsSurplus'] = new Chart(ctxSS, {
@@ -2425,7 +2536,7 @@ function fcRefreshResults() {
       const totalOut = (md.fixedExp||0) + (md.debtPmt||0) + (md.savings||0);
       const surp = md.surplus || 0;
       return `<div class="fc-table-row" style="${colStyle}">
-        <div style="color:#6b7299;">${addMonths(now,i+1).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>
+        <div style="color:#6b7299;">${addMonths(fcStart,i).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>
         <div style="text-align:right;color:#22d47e;font-family:'DM Mono',monospace;">${fmtK(md.income||income)}</div>
         <div style="text-align:right;color:#ff5b6b;font-family:'DM Mono',monospace;">${fmtK(totalOut)}</div>
         <div style="text-align:right;color:${debt<=0.01?'#22d47e':'#ff5b6b'};font-family:'DM Mono',monospace;">${debt<=0.01?'✓ Paid off':fmtK(debt)}</div>
@@ -2446,6 +2557,7 @@ function renderForecast() {
   if (fcMonthsEl && state.forecast.forecastMonths) fcMonthsEl.value = state.forecast.forecastMonths;
   const MONTHS = parseInt(fcMonthsEl?.value) || 36;
   const now = new Date();
+  const fcStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
   const includedDebts = state.debts.filter(d => d.included);
 
@@ -2470,7 +2582,7 @@ function renderForecast() {
         const payment = typeof pData === 'object' ? (pData.default !== undefined ? pData.default : d.minPayment) : (pData || d.minPayment);
         const mo = monthsToPayoff(d.balance, d.apr, payment);
         const interest = totalInterest(d.balance, d.apr, payment);
-        const payoffText = payment <= 0 ? 'No payment' : !isFinite(mo) ? 'Never ⚠' : addMonths(now, mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        const payoffText = payment <= 0 ? 'No payment' : !isFinite(mo) ? 'Never ⚠' : addMonths(fcStart, mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
         const payoffColor = payment <= 0 ? '#6b7299' : !isFinite(mo) ? '#ff5b6b' : mo <= 12 ? '#22d47e' : mo <= 36 ? '#eef0f8' : '#6b7299';
         const interestColor = interest > 5000 ? '#ff5b6b' : interest > 500 ? '#ff9f43' : '#22d47e';
         const isLow = payment > 0 && payment < d.minPayment;
@@ -2510,7 +2622,7 @@ function renderForecast() {
             <button class="fc-expand-btn" id="fc-expandbtn-${d.id}" onclick="fcToggleMonthlyView('${d.id}')">▼ Plan by Month</button>
           </div>
           <div class="fc-monthly-grid" id="fc-monthgrid-${d.id}">
-            ${fcRenderDebtMonthlyGrid(d, MONTHS, now)}
+            ${fcRenderDebtMonthlyGrid(d, MONTHS, fcStart)}
           </div>
         </div>`;
       }).join('');
@@ -2518,7 +2630,7 @@ function renderForecast() {
   }
 
   // Render expense planner
-  renderFcExpensePlanner(MONTHS, now);
+  renderFcExpensePlanner(MONTHS, fcStart);
 
   // Render savings planner rows with per-month grids
   const spEl = document.getElementById('fcSavingsPlanner');
@@ -2531,7 +2643,7 @@ function renderForecast() {
         const monthly = typeof pData === 'object' ? (pData?.default || 0) : (pData || 0);
         const needed = Math.max(0, g.target - g.saved);
         const moToReach = monthly > 0 ? Math.ceil(needed / monthly) : Infinity;
-        const reachText = !isFinite(moToReach) ? 'Add more' : addMonths(now, moToReach).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        const reachText = !isFinite(moToReach) ? 'Add more' : addMonths(fcStart, moToReach).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
         const reachColor = !isFinite(moToReach) ? '#6b7299' : moToReach <= MONTHS ? '#22d47e' : '#ff9f43';
         const currPct = Math.min(100, (g.saved / g.target * 100)).toFixed(1);
         const projPct = Math.min(100, ((g.saved + monthly * MONTHS) / g.target * 100)).toFixed(1);
@@ -2567,7 +2679,7 @@ function renderForecast() {
             <button class="fc-expand-btn" id="fc-expandbtn-goal-${g.id}" onclick="fcToggleMonthlyView('goal-${g.id}')">▼ Plan by Month</button>
           </div>
           <div class="fc-monthly-grid" id="fc-monthgrid-goal-${g.id}">
-            ${fcRenderGoalMonthlyGrid(g, MONTHS, now)}
+            ${fcRenderGoalMonthlyGrid(g, MONTHS, fcStart)}
           </div>
         </div>`;
       }).join('');
@@ -2578,7 +2690,7 @@ function renderForecast() {
   const genSavEl = document.getElementById('fcGeneralSavings');
   if (genSavEl && !genSavEl.value && state.forecast.generalSavings) genSavEl.value = state.forecast.generalSavings;
   const genGridEl = document.getElementById('fcGenSavMonthlyGrid');
-  if (genGridEl) genGridEl.innerHTML = fcRenderGeneralSavingsGrid(MONTHS, now);
+  if (genGridEl) genGridEl.innerHTML = fcRenderGeneralSavingsGrid(MONTHS, fcStart);
 
   // Run full calculation
   fcRefreshResults();
