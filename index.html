@@ -1101,34 +1101,49 @@ function renderDashboard() {
   const totalDebt = getTotalDebt();
 
   document.getElementById('dashSubtitle').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  document.getElementById('kpiIncome').textContent = fmtK(income);
-  document.getElementById('kpiExpenses').textContent = fmtK(expenses + minP);
+  document.getElementById('kpiIncome').textContent = fmt(income);
+  document.getElementById('kpiExpenses').textContent = fmt(expenses + minP);
   const surplusEl = document.getElementById('kpiSurplus');
-  surplusEl.textContent = fmtK(Math.abs(surplus));
+  surplusEl.textContent = fmt(Math.abs(surplus));
   surplusEl.className = 'kpi-value ' + (surplus >= 0 ? 'green' : 'red');
   document.getElementById('kpiSurplusSub').textContent = surplus >= 0 ? '💚 Surplus after all payments' : '🔴 Deficit — review spending';
-  document.getElementById('kpiDebt').textContent = fmtK(totalDebt);
+  document.getElementById('kpiDebt').textContent = fmt(totalDebt);
   document.getElementById('kpiDebtSub').textContent = state.debts.filter(d=>d.included).length + ' accounts tracked';
 
   // Monthly Budget Breakdown bar (dashboard)
+  const dashBarTotal = Math.max(income, expenses + minP, 1);
   const dashSegs = [
     { label: 'Fixed Expenses', amount: expenses, color: '#ff5b6b' },
     { label: 'Debt Payments', amount: minP, color: '#ff9f43' },
     { label: surplus >= 0 ? 'Net Surplus' : 'Over Budget', amount: Math.abs(surplus), color: surplus >= 0 ? '#5c7cff' : 'rgba(255,91,107,0.5)' }
   ].filter(s => s.amount > 0.01);
-  const dashBarTotal = Math.max(income, expenses + minP, 1);
   const dashBarEl = document.getElementById('dashBudgetBar');
   const dashLegEl = document.getElementById('dashBudgetLegend');
   const dashTagEl = document.getElementById('dashBudgetTag');
-  if (dashBarEl) dashBarEl.innerHTML = dashSegs.map(s => `<div style="width:${(s.amount/dashBarTotal*100).toFixed(1)}%;background:${s.color};height:100%;" title="${s.label}: ${fmtK(s.amount)}"></div>`).join('');
-  if (dashLegEl) dashLegEl.innerHTML = `<div class="fc-legend-item"><span class="fc-budget-dot" style="background:#22d47e"></span>Income:&nbsp;<span style="color:#22d47e;">${fmtK(income)}/mo</span></div>${dashSegs.map(s=>`<div class="fc-legend-item"><span class="fc-budget-dot" style="background:${s.color}"></span>${s.label}:&nbsp;<span>${fmtK(s.amount)}</span></div>`).join('')}`;
-  if (dashTagEl) { dashTagEl.textContent = surplus >= 0 ? `+${fmtK(surplus)} surplus` : `${fmtK(Math.abs(surplus))} over`; dashTagEl.style.cssText = `background:${surplus>=0?'rgba(34,212,126,0.15)':'rgba(255,91,107,0.15)'};color:${surplus>=0?'#22d47e':'#ff5b6b'};font-size:11px;font-weight:700;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:99px;`; }
+  if (dashBarEl) dashBarEl.innerHTML =
+    // Income bar (green, full width relative to dashBarTotal)
+    `<div style="width:100%;margin-bottom:5px;">
+       <div style="font-size:10px;color:#22d47e;font-family:'DM Mono',monospace;font-weight:700;margin-bottom:3px;letter-spacing:.5px;">INCOME</div>
+       <div style="display:flex;height:10px;border-radius:6px;overflow:hidden;">
+         <div style="width:${(income/dashBarTotal*100).toFixed(1)}%;background:#22d47e;height:100%;" title="Income: ${fmt(income)}"></div>
+         <div style="flex:1;background:rgba(255,255,255,0.04);height:100%;"></div>
+       </div>
+     </div>` +
+    // Allocation bar
+    `<div>
+       <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;font-weight:700;margin-bottom:3px;letter-spacing:.5px;">ALLOCATION</div>
+       <div style="display:flex;height:22px;border-radius:8px;overflow:hidden;">
+         ${dashSegs.map(s => `<div style="width:${(s.amount/dashBarTotal*100).toFixed(1)}%;background:${s.color};height:100%;" title="${s.label}: ${fmt(s.amount)}"></div>`).join('')}
+       </div>
+     </div>`;
+  if (dashLegEl) dashLegEl.innerHTML = `<div class="fc-legend-item"><span class="fc-budget-dot" style="background:#22d47e"></span>Income:&nbsp;<span style="color:#22d47e;">${fmt(income)}/mo</span></div>${dashSegs.map(s=>`<div class="fc-legend-item"><span class="fc-budget-dot" style="background:${s.color}"></span>${s.label}:&nbsp;<span>${fmt(s.amount)}</span></div>`).join('')}`;
+  if (dashTagEl) { dashTagEl.textContent = surplus >= 0 ? `+${fmt(surplus)} surplus` : `${fmt(Math.abs(surplus))} over`; dashTagEl.style.cssText = `background:${surplus>=0?'rgba(34,212,126,0.15)':'rgba(255,91,107,0.15)'};color:${surplus>=0?'#22d47e':'#ff5b6b'};font-size:11px;font-weight:700;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:99px;`; }
 
   // Net Surplus bar chart
   const surplusAmountEl = document.getElementById('netSurplusAmount');
   const surplusLabelEl = document.getElementById('netSurplusLabel');
   const surplusDescEl = document.getElementById('netSurplusDesc');
-  surplusAmountEl.textContent = (surplus < 0 ? '-' : '') + fmtK(Math.abs(surplus));
+  surplusAmountEl.textContent = (surplus < 0 ? '-' : '') + fmt(Math.abs(surplus));
   surplusAmountEl.style.color = surplus >= 0 ? '#22d47e' : '#ff5b6b';
   surplusLabelEl.style.color = surplus >= 0 ? '#22d47e' : '#ff5b6b';
   surplusDescEl.textContent = surplus >= 0 ? 'available after all expenses & debt payments' : 'deficit — spending exceeds income';
@@ -1268,10 +1283,10 @@ function renderCashFlow() {
   const expenses = getMonthlyExpenses();
   const minP = getMinPayments();
   const surplus = income - expenses - minP;
-  document.getElementById('cfIncome').textContent = fmtK(income);
-  document.getElementById('cfExpenses').textContent = fmtK(expenses + minP);
+  document.getElementById('cfIncome').textContent = fmt(income);
+  document.getElementById('cfExpenses').textContent = fmt(expenses + minP);
   const el = document.getElementById('cfSurplus');
-  el.textContent = fmtK(Math.abs(surplus));
+  el.textContent = fmt(Math.abs(surplus));
   el.className = 'kpi-value ' + (surplus >= 0 ? 'green' : 'red');
 
   // Income list
@@ -1358,9 +1373,9 @@ function filterDebts(type, el) {
 
 function renderDebts() {
   const included = state.debts.filter(d => d.included);
-  document.getElementById('debtTotalIncluded').textContent = fmtK(getTotalDebt());
-  document.getElementById('debtMonthlyInterest').textContent = fmtK(getMonthlyInterest());
-  document.getElementById('debtMinPayments').textContent = fmtK(getMinPayments());
+  document.getElementById('debtTotalIncluded').textContent = fmt(getTotalDebt());
+  document.getElementById('debtMonthlyInterest').textContent = fmt(getMonthlyInterest());
+  document.getElementById('debtMinPayments').textContent = fmt(getMinPayments());
 
   const filtered = debtFilter === 'all' ? state.debts : state.debts.filter(d => d.type === debtFilter);
   const el = document.getElementById('debtList');
@@ -1596,8 +1611,8 @@ function renderPayoff() {
 function renderGoals() {
   const totalSaved = state.goals.reduce((s, g) => s + g.saved, 0);
   const totalTarget = state.goals.reduce((s, g) => s + g.target, 0);
-  document.getElementById('goalsTotalSaved').textContent = fmtK(totalSaved);
-  document.getElementById('goalsTotalTarget').textContent = fmtK(totalTarget);
+  document.getElementById('goalsTotalSaved').textContent = fmt(totalSaved);
+  document.getElementById('goalsTotalTarget').textContent = fmt(totalTarget);
 
   const surplus = getMonthlyIncome() - getMonthlyExpenses() - getMinPayments();
   const totalGoalMonthly = state.goals.reduce((s, g) => s + g.monthly, 0);
@@ -2248,15 +2263,15 @@ function fcRefreshResults() {
   const avgSurplus = perMonth.length ? perMonth.reduce((s, m) => s + m.surplus, 0) / perMonth.length : surplus0;
 
   // KPIs
-  document.getElementById('fcKpiSavings').textContent = fmtK(savingsAccumData[MONTHS-1]||0);
+  document.getElementById('fcKpiSavings').textContent = fmt(savingsAccumData[MONTHS-1]||0);
   document.getElementById('fcKpiSavingsSub').textContent = 'over ' + MONTHS + ' months';
   document.getElementById('fcKpiDebtFree').textContent = debtFreeLabel;
   const surplusKpi = document.getElementById('fcKpiSurplus');
-  surplusKpi.textContent = (surplus0 < 0 ? '-' : '') + fmtK(Math.abs(surplus0));
+  surplusKpi.textContent = (surplus0 < 0 ? '-' : '') + fmt(Math.abs(surplus0));
   surplusKpi.className = 'kpi-value ' + (surplus0 >= 0 ? 'green' : 'red');
   document.getElementById('fcKpiSurplusSub').textContent = surplus0 >= 0 ? 'month 1 · income minus all planned spending' : 'over budget month 1 — reduce somewhere';
   document.getElementById('fcKpiSurplusCard').className = 'kpi ' + (surplus0 >= 0 ? 'green' : 'red');
-  document.getElementById('fcKpiInterestSaved').textContent = fmtK(interestSaved);
+  document.getElementById('fcKpiInterestSaved').textContent = fmt(interestSaved);
 
   // ── New Stacked Bar Chart: Income up, Expenses down, Surplus colored ──
   destroyChart('forecast');
