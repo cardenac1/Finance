@@ -400,6 +400,15 @@ select.form-input option{background:var(–surface2);}
 </div>
 
 <div class="card" style="margin-bottom:16px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <div class="card-title" style="margin-bottom:0;">Monthly Budget Breakdown</div>
+    <div id="dashBudgetTag" style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:99px;"></div>
+  </div>
+  <div class="fc-budget-bar" id="dashBudgetBar" style="height:26px;border-radius:10px;margin:0 0 10px;"></div>
+  <div class="fc-budget-legend" id="dashBudgetLegend"></div>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
   <div style="text-align:center;margin-bottom:4px;">
     <div id="netSurplusLabel" style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#6b7299;">Net Surplus</div>
     <div id="netSurplusAmount" style="font-family:'DM Mono',monospace;font-size:32px;font-weight:500;letter-spacing:-1px;margin:4px 0;">$0</div>
@@ -717,31 +726,53 @@ select.form-input option{background:var(–surface2);}
       <div id="fcSavingsPlanner"></div>
       <!-- General savings row -->
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);">
-        <div class="fc-planner-row fc-goal-row" style="border-bottom:none;padding-bottom:0;">
-          <div class="fc-planner-name">
-            <div style="font-size:20px;">💰</div>
+        <div class="fc-expense-container" style="border-bottom:none;">
+          <div class="fc-planner-row fc-goal-row" style="border-bottom:none;padding-bottom:0;">
+            <div class="fc-planner-name">
+              <div style="font-size:20px;">💰</div>
+              <div>
+                <div style="font-size:13px;font-weight:700;">General Savings</div>
+                <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;">Not tied to a specific goal</div>
+              </div>
+            </div>
             <div>
-              <div style="font-size:13px;font-weight:700;">General Savings</div>
-              <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;">Not tied to a specific goal</div>
+              <div style="background:#12141a;border-radius:99px;height:6px;overflow:hidden;margin-bottom:3px;"><div style="height:100%;border-radius:99px;background:#38bdf8;width:0%;"></div></div>
+              <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;" id="fcGenSavAccum">$0 in 36 months</div>
             </div>
-          </div>
-          <div>
-            <div style="background:#12141a;border-radius:99px;height:6px;overflow:hidden;margin-bottom:3px;"><div style="height:100%;border-radius:99px;background:#38bdf8;width:0%;"></div></div>
-            <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;" id="fcGenSavAccum">$0 in 36 months</div>
-          </div>
-          <div>
-            <div class="fc-input-wrap">
-              <span class="fc-input-label">$</span>
-              <input type="number" class="fc-payment-input" id="fcGeneralSavings" placeholder="0" min="0" oninput="fcSavingsInputChange(this.value)">
-              <span class="fc-input-label">/mo</span>
+            <div>
+              <div class="fc-input-wrap">
+                <span class="fc-input-label">$</span>
+                <input type="number" class="fc-payment-input" id="fcGeneralSavings" placeholder="0" min="0" oninput="fcSavingsInputChange(this.value)" title="Default amount for all months">
+                <span class="fc-input-label">/mo</span>
+              </div>
             </div>
+            <div style="font-size:12px;color:#38bdf8;font-family:'DM Mono',monospace;" id="fcGenSavDate">—</div>
           </div>
-          <div style="font-size:12px;color:#38bdf8;font-family:'DM Mono',monospace;" id="fcGenSavDate">—</div>
+          <div class="fc-expand-row">
+            <button class="fc-expand-btn" id="fc-expandbtn-gensav" onclick="fcToggleMonthlyView('gensav')">▼ Plan by Month</button>
+          </div>
+          <div class="fc-monthly-grid" id="fc-monthgrid-gensav">
+            <div id="fcGenSavMonthlyGrid"></div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Chart -->
+    <!-- Debt Paydown Progress Chart -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Debt Paydown Progress</div>
+      <div style="font-size:11px;color:#6b7299;margin-bottom:12px;">Remaining balance per account over your forecast period. Lines drop to zero as each debt is paid off.</div>
+      <div class="chart-wrap-lg"><canvas id="debtProgressChart"></canvas></div>
+    </div>
+
+    <!-- Savings & Surplus Progress Chart -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Savings &amp; Surplus Progress</div>
+      <div style="font-size:11px;color:#6b7299;margin-bottom:12px;">Bars show monthly surplus (green = money left over, red = over budget). Line shows cumulative savings growing over time.</div>
+      <div class="chart-wrap-lg"><canvas id="savingsSurplusChart"></canvas></div>
+    </div>
+
+    <!-- Monthly Cash Flow Chart -->
     <div class="card" style="margin-bottom:16px;">
       <div class="card-title">Monthly Cash Flow — Income vs Expenses &amp; Surplus</div>
       <div style="font-size:11px;color:#6b7299;margin-bottom:12px;">Income bars go up (green). Expense + debt bars go down (red/orange). Surplus bar is green when positive, red when negative.</div>
@@ -1078,6 +1109,20 @@ function renderDashboard() {
   document.getElementById('kpiSurplusSub').textContent = surplus >= 0 ? '💚 Surplus after all payments' : '🔴 Deficit — review spending';
   document.getElementById('kpiDebt').textContent = fmtK(totalDebt);
   document.getElementById('kpiDebtSub').textContent = state.debts.filter(d=>d.included).length + ' accounts tracked';
+
+  // Monthly Budget Breakdown bar (dashboard)
+  const dashSegs = [
+    { label: 'Fixed Expenses', amount: expenses, color: '#ff5b6b' },
+    { label: 'Debt Payments', amount: minP, color: '#ff9f43' },
+    { label: surplus >= 0 ? 'Net Surplus' : 'Over Budget', amount: Math.abs(surplus), color: surplus >= 0 ? '#5c7cff' : 'rgba(255,91,107,0.5)' }
+  ].filter(s => s.amount > 0.01);
+  const dashBarTotal = Math.max(income, expenses + minP, 1);
+  const dashBarEl = document.getElementById('dashBudgetBar');
+  const dashLegEl = document.getElementById('dashBudgetLegend');
+  const dashTagEl = document.getElementById('dashBudgetTag');
+  if (dashBarEl) dashBarEl.innerHTML = dashSegs.map(s => `<div style="width:${(s.amount/dashBarTotal*100).toFixed(1)}%;background:${s.color};height:100%;" title="${s.label}: ${fmtK(s.amount)}"></div>`).join('');
+  if (dashLegEl) dashLegEl.innerHTML = `<div class="fc-legend-item"><span class="fc-budget-dot" style="background:#22d47e"></span>Income:&nbsp;<span style="color:#22d47e;">${fmtK(income)}/mo</span></div>${dashSegs.map(s=>`<div class="fc-legend-item"><span class="fc-budget-dot" style="background:${s.color}"></span>${s.label}:&nbsp;<span>${fmtK(s.amount)}</span></div>`).join('')}`;
+  if (dashTagEl) { dashTagEl.textContent = surplus >= 0 ? `+${fmtK(surplus)} surplus` : `${fmtK(Math.abs(surplus))} over`; dashTagEl.style.cssText = `background:${surplus>=0?'rgba(34,212,126,0.15)':'rgba(255,91,107,0.15)'};color:${surplus>=0?'#22d47e':'#ff5b6b'};font-size:11px;font-weight:700;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:99px;`; }
 
   // Net Surplus bar chart
   const surplusAmountEl = document.getElementById('netSurplusAmount');
@@ -1593,7 +1638,9 @@ function fcMigrateState() {
   if (!state.forecast) state.forecast = {};
   if (!state.forecast.debtPayments) state.forecast.debtPayments = {};
   if (!state.forecast.expensePlanned) state.forecast.expensePlanned = {};
-  // Migrate old flat-number format → {default, months} object
+  if (!state.forecast.goalContributions) state.forecast.goalContributions = {};
+  if (!state.forecast.generalSavingsMonths) state.forecast.generalSavingsMonths = {};
+  // Migrate flat-number format → {default, months} objects
   for (const id of Object.keys(state.forecast.debtPayments)) {
     const v = state.forecast.debtPayments[id];
     if (typeof v === 'number') state.forecast.debtPayments[id] = { default: v, months: {} };
@@ -1602,6 +1649,25 @@ function fcMigrateState() {
     const v = state.forecast.expensePlanned[id];
     if (typeof v === 'number') state.forecast.expensePlanned[id] = { default: v, months: {} };
   }
+  for (const id of Object.keys(state.forecast.goalContributions)) {
+    const v = state.forecast.goalContributions[id];
+    if (typeof v === 'number') state.forecast.goalContributions[id] = { default: v, months: {} };
+  }
+}
+
+function getPlannedGoalContrib(goalId, month) {
+  const p = state.forecast.goalContributions?.[goalId];
+  if (!p && p !== 0) return 0;
+  if (typeof p === 'number') return p;
+  const override = p.months?.[String(month)];
+  return override !== undefined ? override : (p.default !== undefined ? p.default : 0);
+}
+
+function getPlannedGeneralSavings(month) {
+  const def = typeof state.forecast.generalSavings === 'number' ? state.forecast.generalSavings : 0;
+  const overrides = state.forecast.generalSavingsMonths || {};
+  const ov = overrides[String(month)];
+  return ov !== undefined ? ov : def;
 }
 
 function getPlannedDebtPayment(debtId, month) {
@@ -1644,9 +1710,13 @@ function fcDebtInputChange(debtId, value) {
 }
 
 function fcGoalInputChange(goalId, value) {
-  if (!state.forecast.goalContributions) state.forecast.goalContributions = {};
+  fcMigrateState();
   const amount = Math.max(0, parseFloat(value) || 0);
-  state.forecast.goalContributions[goalId] = amount;
+  if (!state.forecast.goalContributions[goalId] || typeof state.forecast.goalContributions[goalId] === 'number') {
+    state.forecast.goalContributions[goalId] = { default: amount, months: {} };
+  } else {
+    state.forecast.goalContributions[goalId].default = amount;
+  }
   _fcUpdateGoalRow(goalId, amount);
   clearTimeout(_fcDebounce);
   _fcDebounce = setTimeout(fcRefreshResults, 280);
@@ -1654,6 +1724,61 @@ function fcGoalInputChange(goalId, value) {
 
 function fcSavingsInputChange(value) {
   state.forecast.generalSavings = Math.max(0, parseFloat(value) || 0);
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 280);
+}
+
+function fcGoalMonthChange(goalId, month, value) {
+  fcMigrateState();
+  if (!state.forecast.goalContributions[goalId]) state.forecast.goalContributions[goalId] = { default: 0, months: {} };
+  const amount = parseFloat(value);
+  const input = document.getElementById('fc-gi-' + goalId + '-' + month);
+  if (isNaN(amount) || value === '') {
+    delete state.forecast.goalContributions[goalId].months[String(month)];
+    if (input) input.classList.remove('modified');
+  } else {
+    state.forecast.goalContributions[goalId].months[String(month)] = Math.max(0, amount);
+    if (input) input.classList.add('modified');
+  }
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 280);
+}
+
+function fcGeneralSavingsMonthChange(month, value) {
+  fcMigrateState();
+  if (!state.forecast.generalSavingsMonths) state.forecast.generalSavingsMonths = {};
+  const amount = parseFloat(value);
+  const input = document.getElementById('fc-gsi-' + month);
+  if (isNaN(amount) || value === '') {
+    delete state.forecast.generalSavingsMonths[String(month)];
+    if (input) input.classList.remove('modified');
+  } else {
+    state.forecast.generalSavingsMonths[String(month)] = Math.max(0, amount);
+    if (input) input.classList.add('modified');
+  }
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 280);
+}
+
+function fcClearGoalMonths(goalId) {
+  fcMigrateState();
+  if (state.forecast.goalContributions[goalId]) state.forecast.goalContributions[goalId].months = {};
+  const MONTHS = parseInt(document.getElementById('fcMonths')?.value) || 36;
+  for (let m = 0; m < MONTHS; m++) {
+    const inp = document.getElementById('fc-gi-' + goalId + '-' + m);
+    if (inp) { inp.value = ''; inp.classList.remove('modified'); }
+  }
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 280);
+}
+
+function fcClearGeneralSavingsMonths() {
+  state.forecast.generalSavingsMonths = {};
+  const MONTHS = parseInt(document.getElementById('fcMonths')?.value) || 36;
+  for (let m = 0; m < MONTHS; m++) {
+    const inp = document.getElementById('fc-gsi-' + m);
+    if (inp) { inp.value = ''; inp.classList.remove('modified'); }
+  }
   clearTimeout(_fcDebounce);
   _fcDebounce = setTimeout(fcRefreshResults, 280);
 }
@@ -1835,6 +1960,60 @@ function fcRenderExpenseMonthlyGrid(e, MONTHS, now) {
   </div>`;
 }
 
+function fcRenderGoalMonthlyGrid(g, MONTHS, now) {
+  fcMigrateState();
+  const pData = state.forecast.goalContributions[g.id] || { default: 0, months: {} };
+  const def = typeof pData === 'object' ? (pData.default !== undefined ? pData.default : 0) : pData;
+  const overrides = (typeof pData === 'object' && pData.months) ? pData.months : {};
+
+  const headers = Array.from({ length: MONTHS }, (_, i) =>
+    `<th>${addMonths(now, i + 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
+  ).join('');
+
+  const cells = Array.from({ length: MONTHS }, (_, i) => {
+    const ov = overrides[String(i)];
+    const hasOv = ov !== undefined;
+    return `<td><input type="number" class="fc-month-input${hasOv ? ' modified' : ''}" id="fc-gi-${g.id}-${i}" value="${hasOv ? ov : ''}" placeholder="${def}" min="0" oninput="fcGoalMonthChange('${g.id}',${i},this.value)"></td>`;
+  }).join('');
+
+  return `<div class="fc-grid-actions">
+    <span style="font-size:11px;color:#6b7299;">Leave blank to use default (<span style="color:#eef0f8;">${fmt(def)}/mo</span>). Override specific months below.</span>
+    <button class="fc-grid-action-btn muted" onclick="fcClearGoalMonths('${g.id}')">Clear overrides</button>
+  </div>
+  <div class="fc-months-scroll">
+    <table class="fc-month-table">
+      <thead><tr><th>Amount</th>${headers}</tr></thead>
+      <tbody><tr><td style="color:#eef0f8;font-weight:700;">Contribution ($)</td>${cells}</tr></tbody>
+    </table>
+  </div>`;
+}
+
+function fcRenderGeneralSavingsGrid(MONTHS, now) {
+  const def = typeof state.forecast.generalSavings === 'number' ? state.forecast.generalSavings : 0;
+  const overrides = state.forecast.generalSavingsMonths || {};
+
+  const headers = Array.from({ length: MONTHS }, (_, i) =>
+    `<th>${addMonths(now, i + 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`
+  ).join('');
+
+  const cells = Array.from({ length: MONTHS }, (_, i) => {
+    const ov = overrides[String(i)];
+    const hasOv = ov !== undefined;
+    return `<td><input type="number" class="fc-month-input${hasOv ? ' modified' : ''}" id="fc-gsi-${i}" value="${hasOv ? ov : ''}" placeholder="${def}" min="0" oninput="fcGeneralSavingsMonthChange(${i},this.value)"></td>`;
+  }).join('');
+
+  return `<div class="fc-grid-actions">
+    <span style="font-size:11px;color:#6b7299;">Leave blank to use default (<span style="color:#eef0f8;">${fmt(def)}/mo</span>). Override specific months below.</span>
+    <button class="fc-grid-action-btn muted" onclick="fcClearGeneralSavingsMonths()">Clear overrides</button>
+  </div>
+  <div class="fc-months-scroll">
+    <table class="fc-month-table">
+      <thead><tr><th>Amount</th>${headers}</tr></thead>
+      <tbody><tr><td style="color:#eef0f8;font-weight:700;">Savings ($)</td>${cells}</tr></tbody>
+    </table>
+  </div>`;
+}
+
 function fcUpdateMonthlyGrids(debtMonthlyData, MONTHS) {
   for (const [debtId, arr] of Object.entries(debtMonthlyData)) {
     for (let m = 0; m < Math.min(MONTHS, arr.length); m++) {
@@ -1950,9 +2129,6 @@ function fcRefreshResults() {
   if (!state.forecast.goalContributions) state.forecast.goalContributions = {};
 
   const includedDebts = state.debts.filter(d => d.included);
-  const totalGoalContribs = state.goals.reduce((s, g) => s + (state.forecast.goalContributions[g.id] || 0), 0);
-  const generalSavings = state.forecast.generalSavings || 0;
-  const monthlySavings = totalGoalContribs + generalSavings;
 
   // Per-month simulation
   let simDebts = includedDebts.map(d => ({ ...d }));
@@ -1975,6 +2151,11 @@ function fcRefreshResults() {
 
     // Planned expenses for this month
     const fixedExp = state.expenses.reduce((s, e) => s + getPlannedExpenseAmount(e.id, m), 0);
+
+    // Per-month savings (goals + general, each may vary)
+    const monthGoalSavings = state.goals.reduce((s, g) => s + getPlannedGoalContrib(g.id, m), 0);
+    const monthGenSavings = getPlannedGeneralSavings(m);
+    const monthlySavings = monthGoalSavings + monthGenSavings;
 
     // Plan simulation: apply interest then payment per debt
     let monthDebtTotal = 0;
@@ -1999,6 +2180,12 @@ function fcRefreshResults() {
     savingsAccumData.push(cumSavings);
     perMonth.push({ income, fixedExp, debtPmt: monthDebtTotal, savings: monthlySavings, surplus });
   }
+
+  // Per-debt balance-over-time arrays for debt progress chart
+  const debtProgressSeries = includedDebts.map(d => ({
+    id: d.id, name: d.name, color: d.color,
+    data: debtMonthlyData[d.id].map(m => m.balanceAfter)
+  }));
 
   // Update monthly grids with simulation results
   fcUpdateMonthlyGrids(debtMonthlyData, MONTHS);
@@ -2036,11 +2223,13 @@ function fcRefreshResults() {
     </div>`;
   }
 
-  // General savings display
+  // General savings display (use actual cumulative from simulation)
+  const genSavTotal = savingsAccumData[MONTHS - 1] || 0;
   const genAccumEl = document.getElementById('fcGenSavAccum');
   const genDateEl = document.getElementById('fcGenSavDate');
-  if (genAccumEl) genAccumEl.textContent = fmtK(generalSavings * MONTHS) + ' in ' + MONTHS + 'mo';
-  if (genDateEl) genDateEl.textContent = generalSavings > 0 ? '+' + fmtK(generalSavings) + '/mo' : '—';
+  const genSavDefault = typeof state.forecast.generalSavings === 'number' ? state.forecast.generalSavings : 0;
+  if (genAccumEl) genAccumEl.textContent = fmtK(genSavTotal) + ' projected in ' + MONTHS + 'mo';
+  if (genDateEl) genDateEl.textContent = genSavDefault > 0 ? '+' + fmtK(genSavDefault) + '/mo default' : '—';
 
   // Update payoff dates in debt planner rows
   for (const d of includedDebts) {
@@ -2111,6 +2300,100 @@ function fcRefreshResults() {
           x: { stacked: true, grid: { display: false }, ticks: { maxTicksLimit: 12, color: '#6b7299' } },
           y: { stacked: true, ticks: { callback: v => fmtK(v), color: '#6b7299' }, grid: { color: 'rgba(255,255,255,0.04)' },
                title: { display: true, text: '← Outflows  |  Income →', color: '#6b7299', font: { size: 10 } } }
+        }
+      }
+    });
+  }
+
+  // ── Debt Paydown Progress chart ──
+  destroyChart('debtProgress');
+  const ctxDP = document.getElementById('debtProgressChart')?.getContext('2d');
+  if (ctxDP) {
+    const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(now, i+1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+    const datasets = [];
+    if (debtProgressSeries.length > 0) {
+      // Individual debt lines
+      for (const ds of debtProgressSeries) {
+        datasets.push({
+          label: ds.name, data: ds.data,
+          borderColor: ds.color, backgroundColor: ds.color + '18',
+          borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false
+        });
+      }
+      // Bold total line
+      datasets.push({
+        label: 'Total Debt', data: totalDebtData,
+        borderColor: '#ff5b6b', backgroundColor: 'rgba(255,91,107,0.06)',
+        borderWidth: 3, pointRadius: 0, tension: 0.3, fill: true,
+        borderDash: [6, 3]
+      });
+    }
+    charts['debtProgress'] = new Chart(ctxDP, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top', labels: { color: '#6b7299', font: { size: 11 }, usePointStyle: true } },
+          tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw <= 0.01 ? '✓ Paid off' : fmtK(c.raw)}` } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { maxTicksLimit: 12, color: '#6b7299' } },
+          y: { min: 0, ticks: { callback: v => fmtK(v), color: '#6b7299' }, grid: { color: 'rgba(255,255,255,0.04)' } }
+        }
+      }
+    });
+  }
+
+  // ── Savings & Surplus Progress chart ──
+  destroyChart('savingsSurplus');
+  const ctxSS = document.getElementById('savingsSurplusChart')?.getContext('2d');
+  if (ctxSS) {
+    const labels = Array.from({ length: MONTHS }, (_, i) => addMonths(now, i+1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+    const surplusArr2 = perMonth.map(d => d.surplus);
+    const surplusColors2 = surplusArr2.map(v => v >= 0 ? 'rgba(92,124,255,0.7)' : 'rgba(255,91,107,0.7)');
+    charts['savingsSurplus'] = new Chart(ctxSS, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Monthly Surplus',
+            data: surplusArr2,
+            backgroundColor: surplusColors2,
+            borderColor: surplusArr2.map(v => v >= 0 ? '#5c7cff' : '#ff5b6b'),
+            borderWidth: 1,
+            borderRadius: 4,
+            yAxisID: 'y',
+            order: 2
+          },
+          {
+            label: 'Cumulative Savings',
+            data: savingsAccumData,
+            type: 'line',
+            borderColor: '#22d47e',
+            backgroundColor: 'rgba(34,212,126,0.08)',
+            borderWidth: 2.5,
+            pointRadius: 0,
+            tension: 0.4,
+            fill: true,
+            yAxisID: 'y2',
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top', labels: { color: '#6b7299', font: { size: 11 }, usePointStyle: true } },
+          tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${fmtK(Math.abs(c.raw))}${c.raw < 0 ? ' (deficit)' : ''}` } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { maxTicksLimit: 12, color: '#6b7299' } },
+          y: { position: 'left', ticks: { callback: v => fmtK(v), color: '#6b7299' }, grid: { color: 'rgba(255,255,255,0.04)' },
+               title: { display: true, text: 'Monthly Surplus', color: '#5c7cff', font: { size: 10 } } },
+          y2: { position: 'right', ticks: { callback: v => fmtK(v), color: '#22d47e' }, grid: { display: false },
+                title: { display: true, text: 'Cumulative Savings', color: '#22d47e', font: { size: 10 } } }
         }
       }
     });
@@ -2222,52 +2505,65 @@ function renderForecast() {
   // Render expense planner
   renderFcExpensePlanner(MONTHS, now);
 
-  // Render savings planner rows
+  // Render savings planner rows with per-month grids
   const spEl = document.getElementById('fcSavingsPlanner');
   if (spEl) {
     if (state.goals.length === 0) {
       spEl.innerHTML = `<div style="padding:12px 0 4px;font-size:12px;color:#6b7299;">No savings goals yet. Add goals in the Goals page, then plan contributions here.</div>`;
     } else {
       spEl.innerHTML = state.goals.map(g => {
-        const monthly = state.forecast.goalContributions[g.id] || 0;
+        const pData = state.forecast.goalContributions[g.id];
+        const monthly = typeof pData === 'object' ? (pData?.default || 0) : (pData || 0);
         const needed = Math.max(0, g.target - g.saved);
         const moToReach = monthly > 0 ? Math.ceil(needed / monthly) : Infinity;
         const reachText = !isFinite(moToReach) ? 'Add more' : addMonths(now, moToReach).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
         const reachColor = !isFinite(moToReach) ? '#6b7299' : moToReach <= MONTHS ? '#22d47e' : '#ff9f43';
         const currPct = Math.min(100, (g.saved / g.target * 100)).toFixed(1);
         const projPct = Math.min(100, ((g.saved + monthly * MONTHS) / g.target * 100)).toFixed(1);
-        return `<div class="fc-planner-row fc-goal-row">
-          <div class="fc-planner-name">
-            <div style="font-size:22px;line-height:1;">${g.emoji || '🎯'}</div>
+        const hasMonthly = typeof pData === 'object' && pData?.months && Object.keys(pData.months).length > 0;
+        return `<div class="fc-expense-container">
+          <div class="fc-planner-row fc-goal-row" style="border-bottom:none;">
+            <div class="fc-planner-name">
+              <div style="font-size:22px;line-height:1;">${g.emoji || '🎯'}</div>
+              <div>
+                <div style="font-size:13px;font-weight:700;">${g.name}</div>
+                <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;">${fmtK(g.saved)} saved of ${fmtK(g.target)}</div>
+              </div>
+            </div>
             <div>
-              <div style="font-size:13px;font-weight:700;">${g.name}</div>
-              <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;">${fmtK(g.saved)} saved of ${fmtK(g.target)}</div>
+              <div style="background:#0a0b0f;border-radius:99px;height:6px;overflow:hidden;margin-bottom:3px;"><div style="height:100%;border-radius:99px;background:rgba(34,212,126,0.3);width:${currPct}%"></div></div>
+              <div style="background:#0a0b0f;border-radius:99px;height:6px;overflow:hidden;"><div id="fc-gproj-${g.id}" style="height:100%;border-radius:99px;background:#22d47e;width:${projPct}%;transition:.4s;"></div></div>
+              <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;margin-top:3px;">now: ${currPct}% → in ${MONTHS}mo: <span style="color:#22d47e;">${projPct}%</span></div>
+            </div>
+            <div>
+              <div class="fc-input-wrap">
+                <span class="fc-input-label">$</span>
+                <input type="number" class="fc-payment-input" value="${monthly || ''}" placeholder="0" min="0" oninput="fcGoalInputChange('${g.id}', this.value)" title="Default contribution for all months">
+                <span class="fc-input-label">/mo</span>
+              </div>
+              ${hasMonthly ? `<div style="font-size:10px;color:#5c7cff;margin-top:2px;font-family:'DM Mono',monospace;">Has monthly variations</div>` : ''}
+            </div>
+            <div>
+              <div id="fc-greach-${g.id}" style="font-size:13px;font-weight:700;color:${reachColor};">${reachText}</div>
+              <div style="font-size:10px;color:#6b7299;">reach date</div>
             </div>
           </div>
-          <div>
-            <div style="background:#0a0b0f;border-radius:99px;height:6px;overflow:hidden;margin-bottom:3px;"><div style="height:100%;border-radius:99px;background:rgba(34,212,126,0.3);width:${currPct}%"></div></div>
-            <div style="background:#0a0b0f;border-radius:99px;height:6px;overflow:hidden;"><div id="fc-gproj-${g.id}" style="height:100%;border-radius:99px;background:#22d47e;width:${projPct}%;transition:.4s;"></div></div>
-            <div style="font-size:10px;color:#6b7299;font-family:'DM Mono',monospace;margin-top:3px;">now: ${currPct}% → in ${MONTHS}mo: <span style="color:#22d47e;">${projPct}%</span></div>
+          <div class="fc-expand-row">
+            <button class="fc-expand-btn" id="fc-expandbtn-goal-${g.id}" onclick="fcToggleMonthlyView('goal-${g.id}')">▼ Plan by Month</button>
           </div>
-          <div>
-            <div class="fc-input-wrap">
-              <span class="fc-input-label">$</span>
-              <input type="number" class="fc-payment-input" value="${monthly || ''}" placeholder="0" min="0" oninput="fcGoalInputChange('${g.id}', this.value)">
-              <span class="fc-input-label">/mo</span>
-            </div>
-          </div>
-          <div>
-            <div id="fc-greach-${g.id}" style="font-size:13px;font-weight:700;color:${reachColor};">${reachText}</div>
-            <div style="font-size:10px;color:#6b7299;">reach date</div>
+          <div class="fc-monthly-grid" id="fc-monthgrid-goal-${g.id}">
+            ${fcRenderGoalMonthlyGrid(g, MONTHS, now)}
           </div>
         </div>`;
       }).join('');
     }
   }
 
-  // Restore general savings input
+  // Restore general savings input and render its monthly grid
   const genSavEl = document.getElementById('fcGeneralSavings');
   if (genSavEl && !genSavEl.value && state.forecast.generalSavings) genSavEl.value = state.forecast.generalSavings;
+  const genGridEl = document.getElementById('fcGenSavMonthlyGrid');
+  if (genGridEl) genGridEl.innerHTML = fcRenderGeneralSavingsGrid(MONTHS, now);
 
   // Run full calculation
   fcRefreshResults();
