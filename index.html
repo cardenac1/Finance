@@ -1662,11 +1662,16 @@ function getPlannedIncome(month) {
   return ov !== undefined ? ov : def;
 }
 
-function fcIncomeMonthChange(month, val) {
+function fcIncomeMonthChange(month, val, el) {
   fcMigrateState();
   const v = parseFloat(val);
-  if (isNaN(v) || val === '') delete state.forecast.incomeMonths[String(month)];
-  else state.forecast.incomeMonths[String(month)] = v;
+  if (isNaN(v) || val === '') {
+    delete state.forecast.incomeMonths[String(month)];
+    if (el) el.classList.remove('modified');
+  } else {
+    state.forecast.incomeMonths[String(month)] = v;
+    if (el) el.classList.add('modified');
+  }
   saveToStorage();
   clearTimeout(_fcDebounce);
   _fcDebounce = setTimeout(fcRefreshResults, 280);
@@ -1737,34 +1742,34 @@ function fcSavingsInputChange(value) {
   _fcDebounce = setTimeout(fcRefreshResults, 280);
 }
 
-function fcGoalMonthChange(goalId, month, value) {
+function fcGoalMonthChange(goalId, month, value, el) {
   fcMigrateState();
   if (!state.forecast.goalContributions[goalId]) state.forecast.goalContributions[goalId] = { default: 0, months: {} };
   const amount = parseFloat(value);
-  const input = document.getElementById('fc-gi-' + goalId + '-' + month);
   if (isNaN(amount) || value === '') {
     delete state.forecast.goalContributions[goalId].months[String(month)];
-    if (input) input.classList.remove('modified');
+    if (el) el.classList.remove('modified');
   } else {
     state.forecast.goalContributions[goalId].months[String(month)] = Math.max(0, amount);
-    if (input) input.classList.add('modified');
+    if (el) el.classList.add('modified');
   }
+  saveToStorage();
   clearTimeout(_fcDebounce);
   _fcDebounce = setTimeout(fcRefreshResults, 280);
 }
 
-function fcGeneralSavingsMonthChange(month, value) {
+function fcGeneralSavingsMonthChange(month, value, el) {
   fcMigrateState();
   if (!state.forecast.generalSavingsMonths) state.forecast.generalSavingsMonths = {};
   const amount = parseFloat(value);
-  const input = document.getElementById('fc-gsi-' + month);
   if (isNaN(amount) || value === '') {
     delete state.forecast.generalSavingsMonths[String(month)];
-    if (input) input.classList.remove('modified');
+    if (el) el.classList.remove('modified');
   } else {
     state.forecast.generalSavingsMonths[String(month)] = Math.max(0, amount);
-    if (input) input.classList.add('modified');
+    if (el) el.classList.add('modified');
   }
+  saveToStorage();
   clearTimeout(_fcDebounce);
   _fcDebounce = setTimeout(fcRefreshResults, 280);
 }
@@ -1798,21 +1803,21 @@ function fcSaveMonths(value) {
   _fcDebounce = setTimeout(fcRefreshResults, 100);
 }
 
-function fcDebtMonthChange(debtId, month, value) {
+function fcDebtMonthChange(debtId, month, value, el) {
   fcMigrateState();
   if (!state.forecast.debtPayments[debtId]) {
     const debt = state.debts.find(d => d.id === debtId);
     state.forecast.debtPayments[debtId] = { default: debt?.minPayment || 0, months: {} };
   }
   const amount = parseFloat(value);
-  const input = document.getElementById('fc-mi-' + debtId + '-' + month);
   if (isNaN(amount) || value === '') {
     delete state.forecast.debtPayments[debtId].months[String(month)];
-    if (input) input.classList.remove('modified');
+    if (el) el.classList.remove('modified');
   } else {
     state.forecast.debtPayments[debtId].months[String(month)] = Math.max(0, amount);
-    if (input) input.classList.add('modified');
+    if (el) el.classList.add('modified');
   }
+  saveToStorage();
   clearTimeout(_fcDebounce);
   _fcDebounce = setTimeout(fcRefreshResults, 280);
 }
@@ -1829,21 +1834,21 @@ function fcExpenseDefaultChange(expId, value) {
   _fcDebounce = setTimeout(fcRefreshResults, 280);
 }
 
-function fcExpenseMonthChange(expId, month, value) {
+function fcExpenseMonthChange(expId, month, value, el) {
   fcMigrateState();
   if (!state.forecast.expensePlanned[expId]) {
     const exp = state.expenses.find(e => e.id === expId);
     state.forecast.expensePlanned[expId] = { default: exp?.amount || 0, months: {} };
   }
   const amount = parseFloat(value);
-  const input = document.getElementById('fc-ei-' + expId + '-' + month);
   if (isNaN(amount) || value === '') {
     delete state.forecast.expensePlanned[expId].months[String(month)];
-    if (input) input.classList.remove('modified');
+    if (el) el.classList.remove('modified');
   } else {
     state.forecast.expensePlanned[expId].months[String(month)] = Math.max(0, amount);
-    if (input) input.classList.add('modified');
+    if (el) el.classList.add('modified');
   }
+  saveToStorage();
   clearTimeout(_fcDebounce);
   _fcDebounce = setTimeout(fcRefreshResults, 280);
 }
@@ -2517,7 +2522,7 @@ function renderForecastTable(MONTHS, fcStart) {
   // Income row
   const incCells = Array.from({length:MONTHS},(_,i)=>{
     const ov=(state.forecast.incomeMonths||{})[String(i)];
-    return `<td class="fc-tbl-cell"><input type="number" class="fc-cell-input${ov!==undefined?' modified':''}" value="${ov!==undefined?ov:''}" placeholder="${baseIncome}" min="0" oninput="fcIncomeMonthChange(${i},this.value)" title="Override income for ${fmtMonthLabel(addMonths(fcStart,i))}. Blank = ${fmt(baseIncome)} from Cash Flow."></td>`;
+    return `<td class="fc-tbl-cell"><input type="number" class="fc-cell-input${ov!==undefined?' modified':''}" value="${ov!==undefined?ov:''}" placeholder="${baseIncome}" min="0" oninput="fcIncomeMonthChange(${i},this.value,this)" title="Override income for ${fmtMonthLabel(addMonths(fcStart,i))}. Blank = ${fmt(baseIncome)} from Cash Flow."></td>`;
   }).join('');
 
   // Expense rows
@@ -2526,7 +2531,7 @@ function renderForecastTable(MONTHS, fcStart) {
     const def=(typeof p==='object'&&p)?(p.default??e.amount):(typeof p==='number'?p:e.amount);
     const cells=Array.from({length:MONTHS},(_,i)=>{
       const ov=(typeof p==='object'&&p?.months)?.[String(i)];
-      return `<td class="fc-tbl-cell"><input type="number" class="fc-cell-input${ov!==undefined?' modified':''}" value="${ov!==undefined?ov:''}" placeholder="${def}" min="0" oninput="fcExpenseMonthChange('${e.id}',${i},this.value)"></td>`;
+      return `<td class="fc-tbl-cell"><input type="number" class="fc-cell-input${ov!==undefined?' modified':''}" value="${ov!==undefined?ov:''}" placeholder="${def}" min="0" oninput="fcExpenseMonthChange('${e.id}',${i},this.value,this)"></td>`;
     }).join('');
     return `<tr class="fc-tbl-row-expense">${lbl(e.name,e.category,'#ff5b6b')}${cells}${tot('fc-tbl-exp-tot-'+e.id)}</tr>`;
   }).join('');
@@ -2537,7 +2542,7 @@ function renderForecastTable(MONTHS, fcStart) {
     const def=typeof p==='object'?(p?.default??d.minPayment):(p||d.minPayment);
     const pmtCells=Array.from({length:MONTHS},(_,i)=>{
       const ov=(typeof p==='object'&&p?.months)?.[String(i)];
-      return `<td class="fc-tbl-cell"><input type="number" class="fc-cell-input${ov!==undefined?' modified':''}" value="${ov!==undefined?ov:''}" placeholder="${def}" min="0" oninput="fcDebtMonthChange('${d.id}',${i},this.value)" title="${d.name} — Min ${fmt(d.minPayment)}/mo"></td>`;
+      return `<td class="fc-tbl-cell"><input type="number" class="fc-cell-input${ov!==undefined?' modified':''}" value="${ov!==undefined?ov:''}" placeholder="${def}" min="0" oninput="fcDebtMonthChange('${d.id}',${i},this.value,this)" title="${d.name} — Min ${fmt(d.minPayment)}/mo"></td>`;
     }).join('');
     const balCells=Array.from({length:MONTHS},(_,i)=>calc(`fc-tbl-bal-${d.id}-${i}`)).join('');
     const intCells=Array.from({length:MONTHS},(_,i)=>calc(`fc-tbl-int-${d.id}-${i}`)).join('');
@@ -2553,14 +2558,14 @@ function renderForecastTable(MONTHS, fcStart) {
     const def=typeof p==='object'?(p?.default||0):(p||0);
     const cells=Array.from({length:MONTHS},(_,i)=>{
       const ov=(typeof p==='object'&&p?.months)?.[String(i)];
-      return `<td class="fc-tbl-cell"><input type="number" class="fc-cell-input${ov!==undefined?' modified':''}" value="${ov!==undefined?ov:''}" placeholder="${def}" min="0" oninput="fcGoalMonthChange('${g.id}',${i},this.value)"></td>`;
+      return `<td class="fc-tbl-cell"><input type="number" class="fc-cell-input${ov!==undefined?' modified':''}" value="${ov!==undefined?ov:''}" placeholder="${def}" min="0" oninput="fcGoalMonthChange('${g.id}',${i},this.value,this)"></td>`;
     }).join('');
     return `<tr class="fc-tbl-row-savings">${lbl((g.emoji||'🎯')+' '+g.name,'Goal: '+fmt(g.target),'#38bdf8')}${cells}${tot('fc-tbl-goal-tot-'+g.id)}</tr>`;
   }).join('');
   const genDef=typeof state.forecast.generalSavings==='number'?state.forecast.generalSavings:0;
   const genCells=Array.from({length:MONTHS},(_,i)=>{
     const ov=(state.forecast.generalSavingsMonths||{})[String(i)];
-    return `<td class="fc-tbl-cell"><input type="number" class="fc-cell-input${ov!==undefined?' modified':''}" value="${ov!==undefined?ov:''}" placeholder="${genDef||'0'}" min="0" oninput="fcGeneralSavingsMonthChange(${i},this.value)"></td>`;
+    return `<td class="fc-tbl-cell"><input type="number" class="fc-cell-input${ov!==undefined?' modified':''}" value="${ov!==undefined?ov:''}" placeholder="${genDef||'0'}" min="0" oninput="fcGeneralSavingsMonthChange(${i},this.value,this)"></td>`;
   }).join('');
 
   // Totals rows (calculated)
