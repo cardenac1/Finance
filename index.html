@@ -1031,8 +1031,6 @@ function fmtMonthLabel(d) {
   return d.toLocaleDateString('en-US', { month: 'short' }) + " '" + String(d.getFullYear()).slice(2);
 }
 function fmtK(n) {
-  if (Math.abs(n) >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M';
-  if (Math.abs(n) >= 1000) return '$' + (n / 1000).toFixed(1) + 'K';
   return fmt(n);
 }
 function fmtMonths(m) {
