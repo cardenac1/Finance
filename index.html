@@ -1016,6 +1016,14 @@ function getMinPayments() {
   return state.debts.filter(d => d.included).reduce((s, d) => s + d.minPayment, 0);
 }
 
+function getPlannedPayments() {
+  return state.debts.filter(d => d.included).reduce((s, d) => {
+    const p = state.forecast.debtPayments?.[d.id];
+    const planned = typeof p === 'object' ? (p.default ?? d.minPayment) : (p || d.minPayment);
+    return s + planned;
+  }, 0);
+}
+
 function getTotalDebt(includedOnly = true) {
   return state.debts.filter(d => includedOnly ? d.included : true).reduce((s, d) => s + d.balance, 0);
 }
@@ -1260,10 +1268,10 @@ function renderDashboard() {
 function renderCashFlow() {
   const income = getMonthlyIncome();
   const expenses = getMonthlyExpenses();
-  const minP = getMinPayments();
-  const surplus = income - expenses - minP;
+  const plannedP = getPlannedPayments();
+  const surplus = income - expenses - plannedP;
   document.getElementById('cfIncome').textContent = fmt(income);
-  document.getElementById('cfExpenses').textContent = fmt(expenses + minP);
+  document.getElementById('cfExpenses').textContent = fmt(expenses + plannedP);
   const el = document.getElementById('cfSurplus');
   el.textContent = fmt(Math.abs(surplus));
   el.className = 'kpi-value ' + (surplus >= 0 ? 'green' : 'red');
@@ -1309,17 +1317,48 @@ function renderCashFlow() {
           <button class="btn-icon btn-sm" onclick="deleteExpense('${e.id}')">🗑</button>
         </div>
       </div>
-    `).join('') + `<div class="cf-row" style="border-top:2px solid var(--border);margin-top:4px;">
-      <strong>+ Debt Payments (min.)</strong>
-      <span class="cf-amount expense">${fmt(minP)}/mo</span>
-    </div>`;
+    `).join('');
   }
+
+  // Debt payments section — always show individual debts with planned amounts
+  const includedDebts = state.debts.filter(d => d.included);
+  const debtHtml = includedDebts.length === 0 ? '' : (() => {
+    const now = new Date();
+    const debtRows = includedDebts.map(d => {
+      const p = state.forecast.debtPayments?.[d.id];
+      const planned = typeof p === 'object' ? (p.default ?? d.minPayment) : (p || d.minPayment);
+      const isPlanned = planned !== d.minPayment;
+      const payoffMos = monthsToPayoff(d.balance, d.apr, planned);
+      let payoffStr;
+      if (payoffMos === 0) payoffStr = '✓ Paid off';
+      else if (!isFinite(payoffMos)) payoffStr = '⚠ Won\'t pay off';
+      else { const pd = new Date(now.getFullYear(), now.getMonth() + payoffMos, 1); payoffStr = 'Payoff: ' + pd.toLocaleDateString('en-US', {month:'short',year:'numeric'}); }
+      const dot = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${d.color};margin-right:5px;vertical-align:middle;"></span>`;
+      return `<div class="cf-row">
+        <div>
+          <div class="cf-label">${dot}${d.name}</div>
+          <div style="font-size:11px;color:var(--muted);">${d.apr}% APR · ${payoffStr}</div>
+        </div>
+        <div>
+          <div class="cf-amount expense">${fmt(planned)}<span style="color:var(--muted);font-size:10px;">/mo</span></div>
+          <div style="font-size:10px;text-align:right;color:${isPlanned?'#5c7cff':'var(--muted)'};">${isPlanned?'planned':'min.'}</div>
+        </div>
+      </div>`;
+    }).join('');
+    const total = includedDebts.length > 1
+      ? `<div class="cf-row" style="border-top:1px solid rgba(255,255,255,0.06);margin-top:2px;padding-top:6px;"><strong>Total Debt Payments</strong><span class="cf-amount expense">${fmt(plannedP)}/mo</span></div>`
+      : '';
+    return `<div style="border-top:2px solid var(--border);margin-top:${state.expenses.length?'4':'0'}px;padding-top:6px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6b7299;margin-bottom:4px;">Debt Payments</div>
+      ${debtRows}${total}</div>`;
+  })();
+  expEl.innerHTML += debtHtml;
 
   // Cashflow trend (simulated 6 months)
   destroyChart('cft');
   const months = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const incomeData = months.map(() => income * (0.95 + Math.random() * 0.1));
-  const expData = months.map(() => (expenses + minP) * (0.9 + Math.random() * 0.2));
+  const expData = months.map(() => (expenses + plannedP) * (0.9 + Math.random() * 0.2));
   const ctx = document.getElementById('cashflowTrendChart').getContext('2d');
   charts['cft'] = new Chart(ctx, {
     type: 'line',
@@ -2130,6 +2169,16 @@ function _fcUpdateDebtRow(debtId, payment) {
   if (warnEl) {
     warnEl.textContent = (payment > 0 && payment < d.minPayment) ? '⚠ Below minimum' : '';
   }
+  // Update payoff span in the forecast table subtitle
+  const tblPayoffEl = document.getElementById('fc-tbl-payoff-' + debtId);
+  if (tblPayoffEl) {
+    if (payment <= 0) { tblPayoffEl.textContent = 'No payment'; }
+    else if (!isFinite(mo)) { tblPayoffEl.textContent = '⚠ Won\'t pay off'; }
+    else {
+      const _d = new Date(); const _fs = new Date(_d.getFullYear(), _d.getMonth() + 1, 1);
+      tblPayoffEl.textContent = addMonths(_fs, mo).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    }
+  }
 }
 
 function _fcUpdateGoalRow(goalId, monthly) {
@@ -2563,7 +2612,13 @@ function renderForecastTable(MONTHS, fcStart) {
     const intCells=Array.from({length:MONTHS},(_,i)=>calc(`fc-tbl-int-${d.id}-${i}`)).join('');
     const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.color};margin-right:5px;vertical-align:middle;"></span>`;
     const dInp=defInput(def,d.minPayment,'fcDebtInputChange(\''+d.id+'\',this.value)',`title="Default payment — min is ${fmt(d.minPayment)}/mo"`);
-    return `<tr class="fc-tbl-row-debt">${lbl(dot+d.name,`${d.apr}% APR · Min ${fmt(d.minPayment)}/mo`,'#ff9f43')}${defCell(dInp)}${pmtCells}${tot('fc-tbl-pmt-tot-'+d.id)}</tr>
+    const payoffMos=monthsToPayoff(d.balance,d.apr,def);
+    let payoffStr;
+    if(payoffMos===0) payoffStr='✓ Paid off';
+    else if(!isFinite(payoffMos)) payoffStr='⚠ Won\'t pay off';
+    else { const pd=addMonths(fcStart,payoffMos); payoffStr=pd.toLocaleDateString('en-US',{month:'short',year:'numeric'}); }
+    const subtitle=`${d.apr}% APR · Min ${fmt(d.minPayment)}/mo · Est. payoff: <span id="fc-tbl-payoff-${d.id}">${payoffStr}</span>`;
+    return `<tr class="fc-tbl-row-debt">${lbl(dot+d.name,subtitle,'#ff9f43')}${defCell(dInp)}${pmtCells}${tot('fc-tbl-pmt-tot-'+d.id)}</tr>
     <tr class="fc-tbl-row-debt-bal">${lbl('└ Balance after','','')}${defCell('&nbsp;')}${balCells}${tot('fc-tbl-bal-fin-'+d.id)}</tr>
     <tr class="fc-tbl-row-debt-int">${lbl('└ Interest charged','','')}${defCell('&nbsp;')}${intCells}${tot('fc-tbl-int-tot-'+d.id)}</tr>`;
   }).join('');
