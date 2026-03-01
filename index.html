@@ -270,7 +270,7 @@ select.form-input option{background:var(–surface2);}
 .fc-tbl-label.fc-tbl-th{z-index:15;text-align:left;left:0;}
 .fc-tbl-total-col.fc-tbl-th{z-index:10;right:0;}
 .fc-tbl-month{text-align:center;min-width:90px;}
-.fc-tbl-total-col{min-width:90px;text-align:right;border-left:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.015);font-weight:700;font-family:'DM Mono',monospace;position:sticky;right:0;}
+.fc-tbl-total-col{min-width:90px;text-align:right;border-left:1px solid rgba(255,255,255,0.08);background:#0a0b0f;font-weight:700;font-family:'DM Mono',monospace;position:sticky;right:0;}
 .fc-tbl-default-col{min-width:96px;text-align:right;border-right:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.025);position:sticky;left:180px;}
 .fc-tbl-default-col.fc-tbl-th{font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:#6b7299;}
 .fc-tbl-cell{text-align:right;padding:3px 6px;}
@@ -2617,7 +2617,7 @@ function renderForecastTable(MONTHS, fcStart) {
     if(payoffMos===0) payoffStr='✓ Paid off';
     else if(!isFinite(payoffMos)) payoffStr='⚠ Won\'t pay off';
     else { const pd=addMonths(fcStart,payoffMos); payoffStr=pd.toLocaleDateString('en-US',{month:'short',year:'numeric'}); }
-    const subtitle=`${d.apr}% APR · Min ${fmt(d.minPayment)}/mo · Est. payoff: <span id="fc-tbl-payoff-${d.id}">${payoffStr}</span>`;
+    const subtitle=`${d.apr}% APR · Min ${fmt(d.minPayment)}/mo<br>Est. payoff: <span id="fc-tbl-payoff-${d.id}">${payoffStr}</span>`;
     return `<tr class="fc-tbl-row-debt">${lbl(dot+d.name,subtitle,'#ff9f43')}${defCell(dInp)}${pmtCells}${tot('fc-tbl-pmt-tot-'+d.id)}</tr>
     <tr class="fc-tbl-row-debt-bal">${lbl('└ Balance after','','')}${defCell('&nbsp;')}${balCells}${tot('fc-tbl-bal-fin-'+d.id)}</tr>
     <tr class="fc-tbl-row-debt-int">${lbl('└ Interest charged','','')}${defCell('&nbsp;')}${intCells}${tot('fc-tbl-int-tot-'+d.id)}</tr>`;
