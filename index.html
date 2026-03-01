@@ -1766,6 +1766,32 @@ function fcDebtInputChange(debtId, value) {
   _fcDebounce = setTimeout(fcRefreshResults, 280);
 }
 
+function fcTblBalanceChange(debtId, value) {
+  const d = state.debts.find(x => x.id === debtId);
+  if (!d) return;
+  d.balance = Math.max(0, parseFloat(value) || 0);
+  saveToStorage();
+  if (typeof renderDebts === 'function') renderDebts();
+  const p = state.forecast.debtPayments?.[debtId];
+  const payment = typeof p === 'object' ? (p?.default ?? d.minPayment) : (p || d.minPayment);
+  _fcUpdateDebtRow(debtId, payment);
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 100);
+}
+
+function fcTblAprChange(debtId, value) {
+  const d = state.debts.find(x => x.id === debtId);
+  if (!d) return;
+  d.apr = Math.max(0, parseFloat(value) || 0);
+  saveToStorage();
+  if (typeof renderDebts === 'function') renderDebts();
+  const p = state.forecast.debtPayments?.[debtId];
+  const payment = typeof p === 'object' ? (p?.default ?? d.minPayment) : (p || d.minPayment);
+  _fcUpdateDebtRow(debtId, payment);
+  clearTimeout(_fcDebounce);
+  _fcDebounce = setTimeout(fcRefreshResults, 100);
+}
+
 function fcGoalInputChange(goalId, value) {
   fcMigrateState();
   const amount = Math.max(0, parseFloat(value) || 0);
@@ -2617,8 +2643,13 @@ function renderForecastTable(MONTHS, fcStart) {
     if(payoffMos===0) payoffStr='✓ Paid off';
     else if(!isFinite(payoffMos)) payoffStr='⚠ Won\'t pay off';
     else { const pd=addMonths(fcStart,payoffMos); payoffStr=pd.toLocaleDateString('en-US',{month:'short',year:'numeric'}); }
-    const subtitle=`${d.apr}% APR · Min ${fmt(d.minPayment)}/mo<br>Est. payoff: <span id="fc-tbl-payoff-${d.id}">${payoffStr}</span>`;
-    return `<tr class="fc-tbl-row-debt">${lbl(dot+d.name,subtitle,'#ff9f43')}${defCell(dInp)}${pmtCells}${tot('fc-tbl-pmt-tot-'+d.id)}</tr>
+    const inpS=`background:transparent;border:none;border-bottom:1px solid rgba(107,114,153,0.45);color:#c8cde8;font-size:10px;font-family:'DM Mono',monospace;padding:0 2px;outline:none;`;
+    const subStyle=`font-size:10px;color:#6b7299;margin-top:2px;`;
+    const lblCell=`<td class="fc-tbl-label" style="color:#ff9f43"><div>${dot}${d.name}</div>`
+      +`<div style="${subStyle}">Balance: <input type="number" id="fc-tbl-balinp-${d.id}" value="${d.balance}" style="${inpS}width:78px;" onchange="fcTblBalanceChange('${d.id}',this.value)" title="Edit current balance — syncs to Cash Flow"></div>`
+      +`<div style="${subStyle}"><input type="number" id="fc-tbl-aprinp-${d.id}" value="${d.apr}" style="${inpS}width:36px;" onchange="fcTblAprChange('${d.id}',this.value)" title="Edit APR — syncs to Cash Flow">% APR · Min ${fmt(d.minPayment)}/mo</div>`
+      +`<div style="${subStyle}">Est. payoff: <span id="fc-tbl-payoff-${d.id}">${payoffStr}</span></div></td>`;
+    return `<tr class="fc-tbl-row-debt">${lblCell}${defCell(dInp)}${pmtCells}${tot('fc-tbl-pmt-tot-'+d.id)}</tr>
     <tr class="fc-tbl-row-debt-bal">${lbl('└ Balance after','','')}${defCell('&nbsp;')}${balCells}${tot('fc-tbl-bal-fin-'+d.id)}</tr>
     <tr class="fc-tbl-row-debt-int">${lbl('└ Interest charged','','')}${defCell('&nbsp;')}${intCells}${tot('fc-tbl-int-tot-'+d.id)}</tr>`;
   }).join('');
