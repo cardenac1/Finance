@@ -175,8 +175,15 @@ tr:hover td{background:var(--surface2);}
           <div id="reminders-empty" style="display:none;text-align:center;padding:24px 0;color:var(--muted);font-size:13px;">
             🎉 No payments due in the next <span id="empty-days"></span> days
           </div>
-          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.6;">
-            Add these as calendar events or phone alarms so you never miss a payment.
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="display:flex;gap:8px;margin-bottom:10px;">
+              <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center;" onclick="exportCalendar()">📅 Add to Calendar</button>
+              <button class="btn btn-ghost btn-sm" id="notif-btn" style="flex:1;justify-content:center;" onclick="requestNotifications()">🔔 Browser Alerts</button>
+            </div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6;">
+              <strong style="color:var(--text);">📅 Add to Calendar</strong> — downloads a file you open once. Your phone calendar then sends alerts on its own, forever, no app needed.<br>
+              <strong style="color:var(--text);">🔔 Browser Alerts</strong> — pops a notification when this tab is open.
+            </div>
           </div>
         </div>
         <!-- GOALS -->
@@ -261,6 +268,11 @@ tr:hover td{background:var(--surface2);}
             <label>Highlight "urgent" within X days</label>
             <input type="number" id="s-urgent-days" min="1" max="14" value="3">
             <div style="font-size:11px;color:var(--muted);margin-top:4px;">Bills within this many days show in orange/red.</div>
+          </div>
+          <div class="form-row">
+            <label>Calendar &amp; browser alert days</label>
+            <input type="text" id="s-alert-days" placeholder="7,3,1">
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">Comma-separated days before due date to alert. Used for both the .ics calendar export and browser notifications.</div>
           </div>
         </div>
         <div class="card">
@@ -776,12 +788,15 @@ function renderSettings() {
   const s = getSettings();
   document.getElementById('s-reminder-window').value = s.reminderWindow || 14;
   document.getElementById('s-urgent-days').value     = s.urgentDays || 3;
+  document.getElementById('s-alert-days').value      = s.calendarAlertDays || '7,3,1';
 }
 
 function saveSettings() {
   save('ff_settings', {
-    reminderWindow: parseInt(document.getElementById('s-reminder-window').value) || 14,
-    urgentDays:     parseInt(document.getElementById('s-urgent-days').value) || 3,
+    ...getSettings(),
+    reminderWindow:    parseInt(document.getElementById('s-reminder-window').value) || 14,
+    urgentDays:        parseInt(document.getElementById('s-urgent-days').value) || 3,
+    calendarAlertDays: document.getElementById('s-alert-days').value.trim() || '7,3,1',
   });
   render();
   toast('✅ Settings saved');
@@ -840,8 +855,145 @@ document.querySelectorAll('.modal-backdrop').forEach(bd => {
   });
 });
 
+// ── CALENDAR EXPORT (.ics) ────────────────────────────────────────────────────
+// Generates a recurring monthly event for every bill with VALARM alerts baked
+// in. Open the downloaded file once — your calendar app (Google, Apple, Outlook,
+// phone) imports it and handles all future notifications automatically.
+function exportCalendar() {
+  const debts = getDebts().filter(d => d.included && d.dueDay);
+  if (!debts.length) { toast('No bills with due dates to export'); return; }
+
+  const settings  = getSettings();
+  const alertDays = (settings.calendarAlertDays || '7,3,1')
+    .split(',').map(x => parseInt(x.trim())).filter(Boolean);
+
+  function icsDate(date) {
+    // Format as local floating time so the event lands in the user's timezone
+    const pad = n => String(n).padStart(2, '0');
+    return date.getFullYear() + pad(date.getMonth()+1) + pad(date.getDate()) +
+           'T' + pad(date.getHours()) + pad(date.getMinutes()) + '00';
+  }
+
+  function nextOccurrence(dueDay) {
+    const today = new Date();
+    const d = new Date(today.getFullYear(), today.getMonth(), dueDay, 9, 0, 0);
+    if (d <= today) d.setMonth(d.getMonth() + 1);
+    return d;
+  }
+
+  const alarms = alertDays.map(days => {
+    const label = days === 1 ? 'tomorrow' : `in ${days} days`;
+    return `BEGIN:VALARM\r\nTRIGGER:-P${days}D\r\nACTION:DISPLAY\r\nDESCRIPTION:Payment due ${label}\r\nEND:VALARM`;
+  }).join('\r\n');
+
+  // Also alert on the due day itself
+  const dueDayAlarm = `BEGIN:VALARM\r\nTRIGGER:PT0S\r\nACTION:DISPLAY\r\nDESCRIPTION:Payment due TODAY\r\nEND:VALARM`;
+
+  const events = debts.map(d => {
+    const start = nextOccurrence(parseInt(d.dueDay));
+    const end   = new Date(start.getTime() + 30 * 60000); // 30-min event
+    const uid   = 'finflow-' + d.id + '@finflow-local';
+    const summary = d.name + ' payment due — $' + parseFloat(d.minPayment).toFixed(2);
+    const desc = 'Min payment: $' + parseFloat(d.minPayment).toFixed(2) +
+                 '\\nBalance: $' + parseFloat(d.balance).toFixed(2) +
+                 '\\nAPR: ' + d.apr + '%' +
+                 (d.notes ? '\\nNotes: ' + d.notes : '');
+
+    return [
+      'BEGIN:VEVENT',
+      'UID:' + uid,
+      'DTSTART:' + icsDate(start),
+      'DTEND:' + icsDate(end),
+      'RRULE:FREQ=MONTHLY;BYMONTHDAY=' + d.dueDay,
+      'SUMMARY:💳 ' + summary,
+      'DESCRIPTION:' + desc,
+      'BEGIN:VALARM',
+      'TRIGGER:PT0S',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:💳 ' + d.name + ' payment due TODAY — $' + parseFloat(d.minPayment).toFixed(2),
+      'END:VALARM',
+      alarms,
+      'END:VEVENT',
+    ].join('\r\n');
+  }).join('\r\n');
+
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//FinFlow//Finance App//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:FinFlow Bill Reminders',
+    events,
+    'END:VCALENDAR',
+  ].join('\r\n');
+
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'finflow-reminders.ics';
+  a.click();
+  toast('📅 Calendar file downloaded — open it to import into your calendar');
+}
+
+// ── BROWSER NOTIFICATIONS ─────────────────────────────────────────────────────
+function requestNotifications() {
+  if (!('Notification' in window)) { toast('Your browser does not support notifications'); return; }
+  if (Notification.permission === 'granted') {
+    save('ff_settings', { ...getSettings(), browserNotifs: true });
+    toast('🔔 Notifications already enabled');
+    checkAndNotify();
+    return;
+  }
+  Notification.requestPermission().then(perm => {
+    if (perm === 'granted') {
+      save('ff_settings', { ...getSettings(), browserNotifs: true });
+      new Notification('FinFlow', { body: '✅ Bill reminders are on! You\'ll be notified when payments are coming up.', icon: '' });
+      updateNotifBtn();
+      checkAndNotify();
+    } else {
+      toast('Notification permission denied — check your browser settings');
+    }
+  });
+}
+
+function checkAndNotify() {
+  if (Notification.permission !== 'granted') return;
+  if (!getSettings().browserNotifs) return;
+
+  const settings = getSettings();
+  const urgent   = parseInt(settings.urgentDays) || 3;
+  const debts    = getDebts().filter(d => d.included && d.dueDay);
+
+  debts.forEach(d => {
+    const days = daysUntilNext(parseInt(d.dueDay));
+    if (days > urgent) return;
+
+    const when = days === 0 ? 'TODAY' : days === 1 ? 'tomorrow' : 'in ' + days + ' days';
+    const key  = 'ff_notified_' + d.id + '_' + new Date().toDateString();
+    if (sessionStorage.getItem(key)) return; // already notified this session for this day
+    sessionStorage.setItem(key, '1');
+
+    new Notification('💳 ' + d.name + ' due ' + when, {
+      body: '$' + parseFloat(d.minPayment).toFixed(2) + ' minimum payment · Day ' + d.dueDay,
+      tag:  key,
+    });
+  });
+}
+
+function updateNotifBtn() {
+  const btn = document.getElementById('notif-btn');
+  if (!btn) return;
+  if (Notification.permission === 'granted' && getSettings().browserNotifs) {
+    btn.textContent = '🔔 Alerts On';
+    btn.style.color = 'var(--green)';
+  }
+}
+
 // ── START ─────────────────────────────────────────────────────────────────────
 render();
+updateNotifBtn();
+checkAndNotify();
 </script>
 </body>
 </html>
