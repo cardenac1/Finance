@@ -381,21 +381,17 @@ tr:hover td{background:var(--surface2);}
               </div>
 
               <div style="background:var(--surface2);border-radius:10px;padding:14px;">
-                <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">Step 3 — Schedule it with cron-job.org (free, no terminal)</div>
+                <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">Step 3 — Schedule it inside Supabase (no external services)</div>
                 <ol style="font-size:12px;color:var(--muted);line-height:2;padding-left:16px;">
-                  <li>Go to <strong style="color:var(--text)">cron-job.org</strong> and create a free account</li>
-                  <li>Click <strong style="color:var(--text)">Create cronjob</strong></li>
-                  <li>Set the URL to:<br><code style="color:var(--accent2);word-break:break-all;" id="fn-url">https://YOUR_PROJECT_REF.supabase.co/functions/v1/send-reminders</code></li>
-                  <li>Under <strong style="color:var(--text)">Headers</strong>, add:<br>
-                    Key: <code style="color:var(--accent2)">Authorization</code><br>
-                    Value: <code style="color:var(--accent2)">Bearer YOUR_SERVICE_ROLE_KEY</code>
-                  </li>
-                  <li>Set schedule to <strong style="color:var(--text)">Every day at 9:00 AM</strong> (pick your timezone)</li>
-                  <li>Click Create — done! It runs automatically every day.</li>
+                  <li>In your Supabase project, click <strong style="color:var(--text)">Cron Jobs</strong> in the left sidebar</li>
+                  <li>Click <strong style="color:var(--text)">"Create a new cron job"</strong></li>
+                  <li>Give it a name like <code style="color:var(--accent2)">finflow-daily-reminders</code></li>
+                  <li>Set the schedule to <code style="color:var(--accent2)">0 9 * * *</code> (every day at 9 AM UTC)</li>
+                  <li>For the function to run, select <strong style="color:var(--text)">Edge Function</strong> and pick <code style="color:var(--accent2)">send-reminders</code></li>
+                  <li>Click <strong style="color:var(--text)">Create</strong> — that's it, fully automatic from now on</li>
                 </ol>
                 <div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
-                  Your <strong style="color:var(--text)">project ref</strong> is the letters in your Supabase URL (e.g. <code>abcdefghijkl</code> from <code>https://abcdefghijkl.supabase.co</code>).<br>
-                  Your <strong style="color:var(--text)">service_role key</strong> is in Supabase → Settings → API → service_role (keep this private).
+                  The cron schedule <code style="color:var(--accent2)">0 9 * * *</code> means 9 AM UTC every day. To change the time, just edit the number — e.g. <code style="color:var(--accent2)">0 14 * * *</code> = 2 PM UTC = 9 AM Eastern.
                 </div>
               </div>
 
