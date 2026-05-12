@@ -83,7 +83,7 @@ function setupDefaultSettings(ss) {
   if (sheet.getLastRow() > 1) return;
 
   var defaults = [
-    ['email',                   Session.getActiveUser().getEmail(), 'Your Gmail address for email notifications'],
+    ['email',                   Session.getEffectiveUser().getEmail() || Session.getActiveUser().getEmail() || '', 'Your Gmail address for email notifications'],
     ['phoneEmail',              '',          'Phone-to-email gateway (e.g. 6505551234@txt.att.net). Leave blank to use carrier + number below.'],
     ['phoneNumber',             '',          '10-digit mobile number (digits only, no dashes)'],
     ['phoneCarrier',            'att',       'Carrier for SMS gateway: att | tmobile | verizon | sprint | boost | cricket | googlefi | metro'],
