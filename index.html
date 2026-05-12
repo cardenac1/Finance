@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FinFlow</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -20,34 +19,30 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 ::-webkit-scrollbar-track{background:var(--surface);}
 ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px;}
 
-/* Layout */
 .app{display:flex;min-height:100vh;}
 .sidebar{width:210px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0;position:fixed;height:100vh;z-index:100;}
-.main{margin-left:210px;flex:1;padding:28px 32px;max-width:1400px;}
+.main{margin-left:210px;flex:1;padding:28px 32px;}
 .logo{padding:0 18px 20px;font-size:19px;font-weight:800;letter-spacing:-0.5px;border-bottom:1px solid var(--border);margin-bottom:8px;}
 .logo span{color:var(--accent);}
 .nav-section{padding:16px 12px 6px;font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:.15s;position:relative;letter-spacing:.2px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:.15s;position:relative;}
 .nav-item:hover{color:var(--text);background:var(--surface2);}
 .nav-item.active{color:var(--accent);background:rgba(92,124,255,0.1);}
 .nav-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:0 3px 3px 0;}
 .nav-icon{font-size:15px;width:18px;text-align:center;}
-.sidebar-footer{margin-top:auto;padding:14px 18px;border-top:1px solid var(--border);}
+.sidebar-footer{margin-top:auto;padding:14px 18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
 
-/* Pages */
 .page{display:none;animation:fadeIn .2s ease;}
 .page.active{display:block;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
-/* Page header */
 .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
 .page-title{font-size:24px;font-weight:800;letter-spacing:-0.5px;}
 .page-subtitle{font-size:13px;color:var(--muted);margin-top:3px;}
-.header-actions{display:flex;gap:8px;align-items:center;}
+.header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
 
-/* KPI grid */
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-r);padding:18px 20px;position:relative;overflow:hidden;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-r);padding:18px 20px;}
 .kpi-label{font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
 .kpi-value{font-family:var(--mono);font-size:24px;font-weight:500;letter-spacing:-1px;line-height:1;}
 .kpi-sub{font-size:11px;color:var(--muted);margin-top:6px;}
@@ -56,13 +51,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .kpi.blue .kpi-value{color:var(--accent);}
 .kpi.orange .kpi-value{color:var(--orange);}
 
-/* Cards */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-r);padding:20px;}
 .card-title{font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
 
-/* Tables */
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead tr{border-bottom:1px solid var(--border);}
 th{padding:10px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;}
@@ -71,60 +64,51 @@ tr:last-child td{border-bottom:none;}
 tr:hover td{background:var(--surface2);}
 .tfoot-row td{background:var(--surface2);font-weight:700;border-top:1px solid var(--border);}
 
-/* Buttons */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s;letter-spacing:.2px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s;}
 .btn:hover{opacity:.85;}
 .btn-primary{background:var(--accent);color:#fff;}
 .btn-green{background:var(--green);color:#fff;}
-.btn-red{background:var(--red);color:#fff;}
 .btn-ghost{background:var(--surface3);color:var(--text);}
-.btn-sm{padding:5px 10px;font-size:12px;}
-.btn-icon{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 8px;border-radius:6px;cursor:pointer;transition:.15s;}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-icon{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 8px;border-radius:6px;cursor:pointer;transition:.15s;font-size:13px;}
 .btn-icon:hover{color:var(--text);border-color:var(--muted);}
 
-/* Forms / modals */
-.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;}
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;}
 .modal-backdrop.open{display:flex;}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;}
 .modal h2{font-size:18px;font-weight:800;margin-bottom:20px;}
 .form-row{margin-bottom:14px;}
 .form-row label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px;}
-.form-row input,.form-row select,.form-row textarea{
-  width:100%;padding:9px 12px;background:var(--surface2);border:1.5px solid var(--border);
-  border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:.15s;
-}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:.15s;}
 .form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--accent);}
 .form-row select option{background:var(--surface2);}
 .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
 
-/* Tags / badges */
-.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.3px;}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;}
 .badge-red{background:rgba(255,91,107,.15);color:var(--red);}
 .badge-orange{background:rgba(255,159,67,.15);color:var(--orange);}
 .badge-blue{background:rgba(92,124,255,.15);color:var(--accent);}
 .badge-green{background:rgba(34,212,126,.15);color:var(--green);}
+.badge-muted{background:var(--surface3);color:var(--muted);}
 
-/* Progress bar */
 .progress{background:var(--surface3);border-radius:99px;height:6px;overflow:hidden;margin-top:6px;}
-.progress-fill{height:100%;border-radius:99px;background:var(--accent);transition:width .4s;}
+.progress-fill{height:100%;border-radius:99px;transition:width .4s;}
 
-/* Upcoming bills list */
-.bill-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
-.bill-item:last-child{border-bottom:none;}
-.bill-dot{width:8px;height:8px;border-radius:50%;margin-right:10px;flex-shrink:0;}
+/* Reminder cards */
+.reminder-list{display:flex;flex-direction:column;gap:8px;}
+.reminder-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--muted);}
+.reminder-item.today{border-left-color:var(--red);}
+.reminder-item.soon{border-left-color:var(--orange);}
+.reminder-item.upcoming{border-left-color:var(--accent);}
+.reminder-item.future{border-left-color:var(--surface3);}
+.ri-icon{font-size:20px;flex-shrink:0;}
+.ri-body{flex:1;min-width:0;}
+.ri-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ri-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.ri-right{text-align:right;flex-shrink:0;}
+.ri-amount{font-family:var(--mono);font-size:14px;font-weight:600;}
+.ri-when{font-size:11px;margin-top:2px;}
 
-/* Setup screen */
-.setup-card{max-width:500px;margin:80px auto;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;}
-.setup-card h1{font-size:28px;font-weight:800;margin-bottom:8px;}
-.setup-card p{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:24px;}
-
-/* Toast */
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1d26;border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.4);opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999;white-space:nowrap;}
-#toast.show{opacity:1;}
-
-/* Settings */
-.settings-section{margin-bottom:24px;}
-.settings-section h3{font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
 .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;}
 .toggle{position:relative;width:38px;height:21px;flex-shrink:0;}
 .toggle input{opacity:0;width:0;height:0;}
@@ -133,48 +117,20 @@ tr:hover td{background:var(--surface2);}
 .toggle input:checked+.slider{background:var(--accent);}
 .toggle input:checked+.slider::before{transform:translateX(17px);background:white;}
 
-.carrier-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
-.carrier-btn{padding:5px 12px;border:1.5px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);background:none;font-family:var(--font);transition:.15s;}
-.carrier-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(92,124,255,.1);}
-
-/* Log table status */
-.status-sent{color:var(--green);}
-.status-failed{color:var(--red);}
-.status-skipped{color:var(--muted);}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1d26;border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.4);opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999;white-space:nowrap;}
+#toast.show{opacity:1;}
 
 @media(max-width:900px){
-  .sidebar{width:56px;overflow:hidden;}
-  .sidebar:hover{width:210px;}
-  .nav-item span,.nav-section,.logo span,.sidebar-footer{display:none;}
-  .sidebar:hover .nav-item span,.sidebar:hover .nav-section,.sidebar:hover .logo span,.sidebar:hover .sidebar-footer{display:block;}
-  .main{margin-left:56px;}
+  .sidebar{width:52px;}
+  .nav-item span,.nav-section,.logo span{display:none;}
+  .main{margin-left:52px;padding:20px 16px;}
   .kpi-grid{grid-template-columns:1fr 1fr;}
   .grid-2,.grid-3{grid-template-columns:1fr;}
 }
 </style>
 </head>
 <body>
-
-<!-- SETUP SCREEN (shown only until CONFIG values are filled in) -->
-<div id="setup-screen" style="display:none;padding:20px;">
-  <div class="setup-card">
-    <div style="font-size:32px;margin-bottom:12px;">💳</div>
-    <h1>Almost there — one-time setup</h1>
-    <p style="margin-bottom:20px;">Open <strong style="color:var(--accent)">index.html</strong> in a text editor and fill in the two lines near the top of the <code style="color:var(--accent2)">&lt;script&gt;</code> block:</p>
-    <pre style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;font-size:12px;line-height:1.8;color:var(--accent2);overflow-x:auto;">const CONFIG = {
-  supabaseUrl: '<span style="color:var(--green)">https://xxxxxxxxxxxx.supabase.co</span>',
-  supabaseKey: '<span style="color:var(--green)">eyJhbGci... (your anon key)</span>',
-};</pre>
-    <p style="margin-top:16px;font-size:13px;color:var(--muted);line-height:1.7;">
-      Find both values in your Supabase project under<br>
-      <strong style="color:var(--text)">Settings → API → Project URL &amp; anon public key</strong>.<br><br>
-      Save the file and refresh this page. You'll never be asked again.
-    </p>
-  </div>
-</div>
-
-<!-- MAIN APP -->
-<div id="app" class="app" style="display:none;">
+<div class="app">
   <nav class="sidebar">
     <div class="logo">Fin<span>Flow</span></div>
     <div class="nav-section">Overview</div>
@@ -184,10 +140,12 @@ tr:hover td{background:var(--surface2);}
     <div class="nav-item" onclick="nav('income')"><span class="nav-icon">💰</span><span>Income</span></div>
     <div class="nav-item" onclick="nav('expenses')"><span class="nav-icon">🧾</span><span>Expenses</span></div>
     <div class="nav-item" onclick="nav('goals')"><span class="nav-icon">🎯</span><span>Goals</span></div>
-    <div class="nav-section">Reminders</div>
-    <div class="nav-item" onclick="nav('log')"><span class="nav-icon">📋</span><span>Reminder Log</span></div>
+    <div class="nav-section">Settings</div>
     <div class="nav-item" onclick="nav('settings')"><span class="nav-icon">⚙️</span><span>Settings</span></div>
-    <div class="sidebar-footer" style="font-size:11px;color:var(--muted);text-align:center;">FinFlow</div>
+    <div class="sidebar-footer">
+      <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;" onclick="exportData()">⬇ Export</button>
+      <label class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;cursor:pointer;">⬆ Import<input type="file" accept=".json" onchange="importData(event)" style="display:none;"></label>
+    </div>
   </nav>
 
   <main class="main">
@@ -197,7 +155,7 @@ tr:hover td{background:var(--surface2);}
       <div class="page-header">
         <div><div class="page-title">Dashboard</div><div class="page-subtitle" id="dash-date"></div></div>
         <div class="header-actions">
-          <button class="btn btn-ghost btn-sm" onclick="loadDashboard()">↻ Refresh</button>
+          <button class="btn btn-ghost btn-sm" onclick="render()">↻ Refresh</button>
         </div>
       </div>
       <div class="kpi-grid">
@@ -206,11 +164,22 @@ tr:hover td{background:var(--surface2);}
         <div class="kpi blue"><div class="kpi-label">Net Surplus</div><div class="kpi-value" id="kpi-surplus">—</div><div class="kpi-sub">after all payments</div></div>
         <div class="kpi orange"><div class="kpi-label">Total Debt</div><div class="kpi-value" id="kpi-debt">—</div><div class="kpi-sub" id="kpi-debt-sub"></div></div>
       </div>
-      <div class="grid-2">
+      <div class="grid-2" style="margin-bottom:16px;">
+        <!-- REMINDERS PANEL -->
         <div class="card">
-          <div class="card-title">Upcoming Bills (next 30 days)</div>
-          <div id="upcoming-bills"><div style="color:var(--muted);font-size:13px;">Loading…</div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div class="card-title" style="margin-bottom:0;">🔔 Payment Reminders</div>
+            <span id="reminder-window-label" style="font-size:11px;color:var(--muted);"></span>
+          </div>
+          <div id="reminders-list" class="reminder-list"></div>
+          <div id="reminders-empty" style="display:none;text-align:center;padding:24px 0;color:var(--muted);font-size:13px;">
+            🎉 No payments due in the next <span id="empty-days"></span> days
+          </div>
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.6;">
+            Add these as calendar events or phone alarms so you never miss a payment.
+          </div>
         </div>
+        <!-- GOALS -->
         <div class="card">
           <div class="card-title">Savings Goals</div>
           <div id="goals-summary"></div>
@@ -222,15 +191,11 @@ tr:hover td{background:var(--surface2);}
     <div id="page-debts" class="page">
       <div class="page-header">
         <div><div class="page-title">Debts & Bills</div><div class="page-subtitle">Track balances, payments, and due dates</div></div>
-        <div class="header-actions">
-          <button class="btn btn-primary" onclick="openModal('debt')">+ Add Debt</button>
-        </div>
+        <div class="header-actions"><button class="btn btn-primary" onclick="openModal('debt')">+ Add</button></div>
       </div>
       <div class="card" style="padding:0;overflow:hidden;">
         <table>
-          <thead><tr>
-            <th>Name</th><th>Type</th><th>Balance</th><th>APR</th><th>Min Payment</th><th>Due Day</th><th>Utilization</th><th></th>
-          </tr></thead>
+          <thead><tr><th>Name</th><th>Type</th><th>Balance</th><th>APR</th><th>Min Payment</th><th>Due Day</th><th>Utilization</th><th></th></tr></thead>
           <tbody id="debts-body"></tbody>
           <tfoot><tr class="tfoot-row" id="debts-foot"></tr></tfoot>
         </table>
@@ -241,7 +206,7 @@ tr:hover td{background:var(--surface2);}
     <div id="page-income" class="page">
       <div class="page-header">
         <div><div class="page-title">Income</div><div class="page-subtitle">All income sources</div></div>
-        <div class="header-actions"><button class="btn btn-primary" onclick="openModal('income')">+ Add Income</button></div>
+        <div class="header-actions"><button class="btn btn-primary" onclick="openModal('income')">+ Add</button></div>
       </div>
       <div class="card" style="padding:0;overflow:hidden;">
         <table>
@@ -256,7 +221,7 @@ tr:hover td{background:var(--surface2);}
     <div id="page-expenses" class="page">
       <div class="page-header">
         <div><div class="page-title">Expenses</div><div class="page-subtitle">Fixed monthly costs</div></div>
-        <div class="header-actions"><button class="btn btn-primary" onclick="openModal('expense')">+ Add Expense</button></div>
+        <div class="header-actions"><button class="btn btn-primary" onclick="openModal('expense')">+ Add</button></div>
       </div>
       <div class="card" style="padding:0;overflow:hidden;">
         <table>
@@ -271,131 +236,45 @@ tr:hover td{background:var(--surface2);}
     <div id="page-goals" class="page">
       <div class="page-header">
         <div><div class="page-title">Savings Goals</div><div class="page-subtitle">Track progress toward financial targets</div></div>
-        <div class="header-actions"><button class="btn btn-primary" onclick="openModal('goal')">+ Add Goal</button></div>
+        <div class="header-actions"><button class="btn btn-primary" onclick="openModal('goal')">+ Add</button></div>
       </div>
       <div class="grid-3" id="goals-grid"></div>
-    </div>
-
-    <!-- LOG -->
-    <div id="page-log" class="page">
-      <div class="page-header">
-        <div><div class="page-title">Reminder Log</div><div class="page-subtitle">History of all sent notifications</div></div>
-        <div class="header-actions"><button class="btn btn-ghost btn-sm" onclick="loadLog()">↻ Refresh</button></div>
-      </div>
-      <div class="card" style="padding:0;overflow:hidden;">
-        <table>
-          <thead><tr><th>Time</th><th>Type</th><th>Recipient</th><th>Subject</th><th>Status</th></tr></thead>
-          <tbody id="log-body"></tbody>
-        </table>
-      </div>
     </div>
 
     <!-- SETTINGS -->
     <div id="page-settings" class="page">
       <div class="page-header">
-        <div><div class="page-title">Settings</div><div class="page-subtitle">Configure reminders and notifications</div></div>
-        <div class="header-actions"><button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button></div>
+        <div><div class="page-title">Settings</div><div class="page-subtitle">Reminder preferences and data management</div></div>
+        <div class="header-actions"><button class="btn btn-primary" onclick="saveSettings()">💾 Save</button></div>
       </div>
       <div class="grid-2">
-        <div>
-          <div class="card settings-section" style="margin-bottom:16px;">
-            <h3>📧 Email Notifications</h3>
-            <div class="toggle-row"><span style="font-size:13px;">Enable email reminders</span><label class="toggle"><input type="checkbox" id="s-enable-email"><span class="slider"></span></label></div>
-            <div class="form-row" style="margin-top:12px;">
-              <label>Your email address</label>
-              <input type="email" id="s-email" placeholder="you@example.com">
-            </div>
-            <div class="form-row">
-              <label>Resend API Key</label>
-              <input type="text" id="s-resend-key" placeholder="re_...">
-              <div style="font-size:11px;color:var(--muted);margin-top:4px;">Get a free key at resend.com. Required to send emails.</div>
-            </div>
+        <div class="card">
+          <div class="card-title">🔔 Reminder Window</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
+            The dashboard shows upcoming payments within this many days, so you know what alarms and calendar events to set.
+          </p>
+          <div class="form-row">
+            <label>Show reminders for next X days</label>
+            <input type="number" id="s-reminder-window" min="1" max="60" value="14">
           </div>
-
-          <div class="card settings-section">
-            <h3>📱 SMS via Carrier Gateway</h3>
-            <div class="toggle-row"><span style="font-size:13px;">Enable SMS reminders</span><label class="toggle"><input type="checkbox" id="s-enable-sms"><span class="slider"></span></label></div>
-            <div class="form-row" style="margin-top:12px;">
-              <label>Phone number (digits only)</label>
-              <input type="text" id="s-phone" placeholder="6505551234">
-            </div>
-            <div class="form-row">
-              <label>Carrier</label>
-              <div class="carrier-grid" id="carrier-grid"></div>
-              <input type="hidden" id="s-carrier" value="att">
-            </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:8px;">SMS is sent by emailing your carrier's gateway (free, uses your Resend key).</div>
+          <div class="form-row">
+            <label>Highlight "urgent" within X days</label>
+            <input type="number" id="s-urgent-days" min="1" max="14" value="3">
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">Bills within this many days show in orange/red.</div>
           </div>
         </div>
-
-        <div>
-          <div class="card settings-section" style="margin-bottom:16px;">
-            <h3>⏰ Reminder Schedule</h3>
-            <div class="form-row">
-              <label>Days before due date to remind</label>
-              <input type="text" id="s-reminder-days" placeholder="7,3,1">
-              <div style="font-size:11px;color:var(--muted);margin-top:4px;">Comma-separated. e.g. "7,3,1" = reminders 7, 3, and 1 day before.</div>
-            </div>
-            <div class="toggle-row"><span style="font-size:13px;">Alert when bill is due today</span><label class="toggle"><input type="checkbox" id="s-due-today"><span class="slider"></span></label></div>
-            <div class="toggle-row" style="margin-top:8px;"><span style="font-size:13px;">Alert for overdue bills</span><label class="toggle"><input type="checkbox" id="s-overdue-alert"><span class="slider"></span></label></div>
-            <div class="form-row" style="margin-top:12px;">
-              <label>Grace period before "overdue" (days)</label>
-              <input type="number" id="s-grace-days" min="0" max="14">
-            </div>
+        <div class="card">
+          <div class="card-title">💾 Data & Backup</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
+            All data is stored locally in your browser. Export regularly to keep a backup file on your device.
+          </p>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button class="btn btn-green" style="justify-content:center;" onclick="exportData()">⬇ Export backup (.json)</button>
+            <label class="btn btn-ghost" style="justify-content:center;cursor:pointer;">⬆ Import from backup<input type="file" accept=".json" onchange="importData(event)" style="display:none;"></label>
+            <button class="btn btn-ghost" style="justify-content:center;color:var(--red);" onclick="clearAllData()">🗑 Clear all data</button>
           </div>
-
-          <div class="card settings-section" style="margin-bottom:16px;">
-            <h3>📊 Digests & Reports</h3>
-            <div class="toggle-row"><span style="font-size:13px;">Weekly digest (Mondays)</span><label class="toggle"><input type="checkbox" id="s-weekly"><span class="slider"></span></label></div>
-            <div class="toggle-row" style="margin-top:8px;"><span style="font-size:13px;">Monthly report</span><label class="toggle"><input type="checkbox" id="s-monthly"><span class="slider"></span></label></div>
-          </div>
-
-          <div class="card settings-section">
-            <h3>🔁 How to activate background reminders</h3>
-            <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px;">
-              Everything below is done entirely in your browser — no terminal or command line needed.
-            </p>
-
-            <div style="display:flex;flex-direction:column;gap:14px;">
-
-              <div style="background:var(--surface2);border-radius:10px;padding:14px;">
-                <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">Step 1 — Create the Edge Function in Supabase</div>
-                <ol style="font-size:12px;color:var(--muted);line-height:2;padding-left:16px;">
-                  <li>Go to <strong style="color:var(--text)">supabase.com</strong> → open your project</li>
-                  <li>Click <strong style="color:var(--text)">Edge Functions</strong> in the left sidebar</li>
-                  <li>Click <strong style="color:var(--text)">"Create a new function"</strong></li>
-                  <li>Name it <code style="color:var(--accent2)">send-reminders</code></li>
-                  <li>Delete the placeholder code and paste in the entire contents of<br><code style="color:var(--accent2)">supabase/functions/send-reminders/index.ts</code> from this repo</li>
-                  <li>Click <strong style="color:var(--text)">Deploy</strong></li>
-                </ol>
-              </div>
-
-              <div style="background:var(--surface2);border-radius:10px;padding:14px;">
-                <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">Step 2 — Add your Resend API key as a secret</div>
-                <ol style="font-size:12px;color:var(--muted);line-height:2;padding-left:16px;">
-                  <li>Still in Supabase, click <strong style="color:var(--text)">Edge Functions</strong> → <strong style="color:var(--text)">Secrets</strong> (top tabs)</li>
-                  <li>Click <strong style="color:var(--text)">"Add new secret"</strong></li>
-                  <li>Name: <code style="color:var(--accent2)">RESEND_API_KEY</code> &nbsp; Value: your <code style="color:var(--accent2)">re_...</code> key</li>
-                  <li>Click Save</li>
-                </ol>
-              </div>
-
-              <div style="background:var(--surface2);border-radius:10px;padding:14px;">
-                <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">Step 3 — Schedule it inside Supabase (no external services)</div>
-                <ol style="font-size:12px;color:var(--muted);line-height:2;padding-left:16px;">
-                  <li>In your Supabase project, click <strong style="color:var(--text)">Cron Jobs</strong> in the left sidebar</li>
-                  <li>Click <strong style="color:var(--text)">"Create a new cron job"</strong></li>
-                  <li>Give it a name like <code style="color:var(--accent2)">finflow-daily-reminders</code></li>
-                  <li>Set the schedule to <code style="color:var(--accent2)">0 9 * * *</code> (every day at 9 AM UTC)</li>
-                  <li>For the function to run, select <strong style="color:var(--text)">Edge Function</strong> and pick <code style="color:var(--accent2)">send-reminders</code></li>
-                  <li>Click <strong style="color:var(--text)">Create</strong> — that's it, fully automatic from now on</li>
-                </ol>
-                <div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
-                  The cron schedule <code style="color:var(--accent2)">0 9 * * *</code> means 9 AM UTC every day. To change the time, just edit the number — e.g. <code style="color:var(--accent2)">0 14 * * *</code> = 2 PM UTC = 9 AM Eastern.
-                </div>
-              </div>
-
-            </div>
+          <div style="margin-top:14px;font-size:11px;color:var(--muted);line-height:1.6;">
+            Your data never leaves your device — nothing is sent to any server.
           </div>
         </div>
       </div>
@@ -407,26 +286,23 @@ tr:hover td{background:var(--surface2);}
 <!-- MODALS -->
 <div class="modal-backdrop" id="modal-debt">
   <div class="modal">
-    <h2 id="debt-modal-title">Add Debt</h2>
+    <h2 id="debt-modal-title">Add Debt / Bill</h2>
     <input type="hidden" id="debt-id">
     <div class="grid-2">
       <div class="form-row"><label>Name</label><input id="d-name" placeholder="AMEX Gold"></div>
       <div class="form-row"><label>Type</label>
-        <select id="d-type">
-          <option>Credit Card</option><option>Personal Loan</option><option>Auto Loan</option>
-          <option>Student Loan</option><option>Mortgage</option><option>Medical</option><option>Other</option>
-        </select>
+        <select id="d-type"><option>Credit Card</option><option>Personal Loan</option><option>Auto Loan</option><option>Student Loan</option><option>Mortgage</option><option>Medical</option><option>Subscription</option><option>Other</option></select>
       </div>
       <div class="form-row"><label>Balance ($)</label><input id="d-balance" type="number" min="0" step="0.01" placeholder="0.00"></div>
       <div class="form-row"><label>APR (%)</label><input id="d-apr" type="number" min="0" step="0.01" placeholder="0.00"></div>
       <div class="form-row"><label>Min Payment ($)</label><input id="d-payment" type="number" min="0" step="0.01" placeholder="0.00"></div>
-      <div class="form-row"><label>Due Day (1–28)</label><input id="d-due" type="number" min="1" max="28" placeholder="15"></div>
+      <div class="form-row"><label>Due Day of Month (1–28)</label><input id="d-due" type="number" min="1" max="28" placeholder="15"></div>
       <div class="form-row"><label>Credit Limit ($)</label><input id="d-limit" type="number" min="0" step="0.01" placeholder="0"></div>
       <div class="form-row"><label>Color</label><input id="d-color" type="color" value="#5c7cff" style="height:38px;padding:4px;"></div>
     </div>
-    <div class="form-row"><label>Notes</label><textarea id="d-notes" rows="2" placeholder="Optional notes"></textarea></div>
-    <div class="form-row" style="display:flex;align-items:center;gap:10px;">
-      <label class="toggle" style="margin:0;"><input type="checkbox" id="d-included" checked><span class="slider"></span></label>
+    <div class="form-row"><label>Notes</label><textarea id="d-notes" rows="2"></textarea></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
+      <label class="toggle"><input type="checkbox" id="d-included" checked><span class="slider"></span></label>
       <span style="font-size:13px;">Include in calculations</span>
     </div>
     <div class="form-actions">
@@ -443,10 +319,7 @@ tr:hover td{background:var(--surface2);}
     <div class="form-row"><label>Name</label><input id="i-name" placeholder="Primary Salary"></div>
     <div class="form-row"><label>Amount ($)</label><input id="i-amount" type="number" min="0" step="0.01" placeholder="0.00"></div>
     <div class="form-row"><label>Frequency</label>
-      <select id="i-freq">
-        <option value="monthly">Monthly</option><option value="bi-weekly">Bi-weekly</option>
-        <option value="weekly">Weekly</option><option value="annual">Annual</option>
-      </select>
+      <select id="i-freq"><option value="monthly">Monthly</option><option value="bi-weekly">Bi-weekly</option><option value="weekly">Weekly</option><option value="annual">Annual</option></select>
     </div>
     <div class="form-actions">
       <button class="btn btn-ghost" onclick="closeModal('income')">Cancel</button>
@@ -462,12 +335,7 @@ tr:hover td{background:var(--surface2);}
     <div class="form-row"><label>Name</label><input id="e-name" placeholder="Rent"></div>
     <div class="form-row"><label>Amount ($)</label><input id="e-amount" type="number" min="0" step="0.01" placeholder="0.00"></div>
     <div class="form-row"><label>Category</label>
-      <select id="e-cat">
-        <option value="housing">Housing</option><option value="utilities">Utilities</option>
-        <option value="food">Food</option><option value="transport">Transport</option>
-        <option value="health">Health</option><option value="subscriptions">Subscriptions</option>
-        <option value="insurance">Insurance</option><option value="other">Other</option>
-      </select>
+      <select id="e-cat"><option value="housing">Housing</option><option value="utilities">Utilities</option><option value="food">Food</option><option value="transport">Transport</option><option value="health">Health</option><option value="subscriptions">Subscriptions</option><option value="insurance">Insurance</option><option value="other">Other</option></select>
     </div>
     <div class="form-actions">
       <button class="btn btn-ghost" onclick="closeModal('expense')">Cancel</button>
@@ -486,7 +354,7 @@ tr:hover td{background:var(--surface2);}
       <div class="form-row"><label>Target ($)</label><input id="g-target" type="number" min="0" step="0.01" placeholder="10000"></div>
       <div class="form-row"><label>Saved so far ($)</label><input id="g-current" type="number" min="0" step="0.01" placeholder="0"></div>
     </div>
-    <div class="form-row"><label>Monthly contribution ($)</label><input id="g-contrib" type="number" min="0" step="0.01" placeholder="0"></div>
+    <div class="form-row"><label>Monthly Contribution ($)</label><input id="g-contrib" type="number" min="0" step="0.01" placeholder="0"></div>
     <div class="form-row"><label>Notes</label><textarea id="g-notes" rows="2"></textarea></div>
     <div class="form-actions">
       <button class="btn btn-ghost" onclick="closeModal('goal')">Cancel</button>
@@ -498,61 +366,73 @@ tr:hover td{background:var(--surface2);}
 <div id="toast"></div>
 
 <script>
-// ════════════════════════════════════════════════════════════════
-//  CONFIGURATION — fill these in once, then you're done forever
-// ════════════════════════════════════════════════════════════════
-const CONFIG = {
-  supabaseUrl:  'PASTE_YOUR_PROJECT_URL_HERE',   // e.g. https://abcdef.supabase.co
-  supabaseKey:  'PASTE_YOUR_ANON_KEY_HERE',       // the long eyJ... string
-};
-// ════════════════════════════════════════════════════════════════
+// ── DATA LAYER ────────────────────────────────────────────────────────────────
+// Everything lives in localStorage. Keys: ff_debts, ff_income, ff_expenses, ff_goals, ff_settings
 
-const CARRIERS = [
-  {id:'att',label:'AT&T'},{id:'tmobile',label:'T-Mobile'},{id:'verizon',label:'Verizon'},
-  {id:'sprint',label:'Sprint'},{id:'boost',label:'Boost'},{id:'cricket',label:'Cricket'},
-  {id:'googlefi',label:'Google Fi'},{id:'metro',label:'Metro PCS'},{id:'uscellular',label:'US Cellular'},
-];
+function load(key, def) {
+  try { return JSON.parse(localStorage.getItem(key)) || def; } catch { return def; }
+}
+function save(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
-// ── INIT ─────────────────────────────────────────────────────────────────────
-const NOT_CONFIGURED = CONFIG.supabaseUrl.startsWith('PASTE') || CONFIG.supabaseKey.startsWith('PASTE');
+function getDebts()    { return load('ff_debts', []); }
+function getIncome()   { return load('ff_income', []); }
+function getExpenses() { return load('ff_expenses', []); }
+function getGoals()    { return load('ff_goals', []); }
+function getSettings() { return load('ff_settings', { reminderWindow: 14, urgentDays: 3 }); }
 
-const sb = NOT_CONFIGURED ? null : supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
-(function init() {
-  if (NOT_CONFIGURED) {
-    document.getElementById('setup-screen').style.display = 'block';
-    return;
-  }
-  document.getElementById('app').style.display = 'flex';
-  buildCarrierGrid();
-  loadDashboard();
-  loadSettings();
-})();
-
-// ── NAVIGATION ────────────────────────────────────────────────────────────────
-const PAGE_LOADERS = { dashboard: loadDashboard, debts: loadDebts, income: loadIncome, expenses: loadExpenses, goals: loadGoals, log: loadLog, settings: loadSettings };
-
-function nav(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n => { if (n.getAttribute('onclick') === `nav('${page}')`) n.classList.add('active'); });
-  if (PAGE_LOADERS[page]) PAGE_LOADERS[page]();
+// ── EXPORT / IMPORT ───────────────────────────────────────────────────────────
+function exportData() {
+  const data = {
+    version: 1,
+    exported: new Date().toISOString(),
+    debts:    getDebts(),
+    income:   getIncome(),
+    expenses: getExpenses(),
+    goals:    getGoals(),
+    settings: getSettings(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'finflow-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  toast('✅ Backup downloaded');
 }
 
-// ── TOAST ─────────────────────────────────────────────────────────────────────
-function toast(msg, ms) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), ms || 2800);
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.version) throw new Error('Unrecognized file format');
+      if (!confirm('This will replace all current data. Continue?')) return;
+      if (data.debts)    save('ff_debts',    data.debts);
+      if (data.income)   save('ff_income',   data.income);
+      if (data.expenses) save('ff_expenses', data.expenses);
+      if (data.goals)    save('ff_goals',    data.goals);
+      if (data.settings) save('ff_settings', data.settings);
+      render();
+      toast('✅ Data imported successfully');
+    } catch (err) {
+      toast('❌ Invalid file: ' + err.message);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
-const fmt = n => '$' + (parseFloat(n) || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-const fmtPct = n => (parseFloat(n) || 0).toFixed(1) + '%';
+function clearAllData() {
+  if (!confirm('Delete ALL data permanently? Export a backup first if you want to keep it.')) return;
+  ['ff_debts','ff_income','ff_expenses','ff_goals','ff_settings'].forEach(k => localStorage.removeItem(k));
+  render();
+  toast('All data cleared');
+}
 
+// ── CALCULATIONS ──────────────────────────────────────────────────────────────
 function monthlyEquiv(amount, freq) {
   amount = parseFloat(amount) || 0;
   if (freq === 'bi-weekly') return amount * 26 / 12;
@@ -562,34 +442,50 @@ function monthlyEquiv(amount, freq) {
 }
 
 function daysUntilNext(dueDay) {
-  const today = new Date();
-  const cur = today.getDate();
-  const dim = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const today  = new Date();
+  const cur    = today.getDate();
+  const dim    = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   return dueDay >= cur ? dueDay - cur : (dim - cur) + dueDay;
 }
 
-function urgencyBadge(days) {
-  if (days === 0) return '<span class="badge badge-red">Today</span>';
-  if (days <= 3)  return '<span class="badge badge-orange">In ' + days + 'd</span>';
-  if (days <= 7)  return '<span class="badge badge-blue">In ' + days + 'd</span>';
-  return '<span class="badge" style="color:var(--muted)">In ' + days + 'd</span>';
+function dueDateThisOrNext(dueDay) {
+  // Returns the actual calendar date of the next occurrence
+  const today = new Date();
+  const cur   = today.getDate();
+  const d     = new Date(today);
+  if (dueDay >= cur) {
+    d.setDate(dueDay);
+  } else {
+    d.setMonth(d.getMonth() + 1, dueDay);
+  }
+  return d;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render() {
+  renderDashboard();
+  renderDebts();
+  renderIncome();
+  renderExpenses();
+  renderGoals();
+  renderSettings();
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
-async function loadDashboard() {
-  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-US', {weekday:'long',month:'long',day:'numeric',year:'numeric'});
+function renderDashboard() {
+  const debts    = getDebts().filter(d => d.included);
+  const income   = getIncome();
+  const expenses = getExpenses();
+  const goals    = getGoals();
+  const settings = getSettings();
 
-  const [{ data: debts }, { data: income }, { data: expenses }, { data: goals }] = await Promise.all([
-    sb.from('debts').select('*').eq('included', true),
-    sb.from('income').select('*'),
-    sb.from('expenses').select('*'),
-    sb.from('goals').select('*'),
-  ]);
+  document.getElementById('dash-date').textContent =
+    new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
 
-  const monthlyIncome   = (income   || []).reduce((s, r) => s + monthlyEquiv(r.amount, r.frequency), 0);
-  const monthlyExpenses = (expenses || []).reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
-  const debtPayments    = (debts    || []).reduce((s, d) => s + (parseFloat(d.min_payment) || 0), 0);
-  const totalDebt       = (debts    || []).reduce((s, d) => s + (parseFloat(d.balance) || 0), 0);
+  const monthlyIncome   = income.reduce((s, r) => s + monthlyEquiv(r.amount, r.frequency), 0);
+  const monthlyExpenses = expenses.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+  const debtPayments    = debts.reduce((s, d) => s + (parseFloat(d.minPayment) || 0), 0);
+  const totalDebt       = debts.reduce((s, d) => s + (parseFloat(d.balance) || 0), 0);
   const surplus         = monthlyIncome - monthlyExpenses - debtPayments;
 
   document.getElementById('kpi-income').textContent   = fmt(monthlyIncome);
@@ -597,35 +493,69 @@ async function loadDashboard() {
   document.getElementById('kpi-surplus').textContent  = fmt(surplus);
   document.getElementById('kpi-debt').textContent     = fmt(totalDebt);
   document.getElementById('kpi-debt-sub').textContent = fmt(debtPayments) + '/mo payments';
+  document.getElementById('kpi-surplus').style.color  = surplus >= 0 ? 'var(--green)' : 'var(--red)';
 
-  const surplusEl = document.getElementById('kpi-surplus');
-  surplusEl.style.color = surplus >= 0 ? 'var(--green)' : 'var(--red)';
+  // ── Reminders panel ────────────────────────────────────────────────────────
+  const window_ = parseInt(settings.reminderWindow) || 14;
+  const urgent  = parseInt(settings.urgentDays)     || 3;
 
-  // Upcoming bills
-  const upcoming = (debts || []).map(d => ({ ...d, daysUntil: daysUntilNext(parseInt(d.due_day)) }))
-    .sort((a, b) => a.daysUntil - b.daysUntil).slice(0, 8);
+  document.getElementById('reminder-window-label').textContent = 'Next ' + window_ + ' days';
+  document.getElementById('empty-days').textContent = window_;
 
-  document.getElementById('upcoming-bills').innerHTML = upcoming.length
-    ? upcoming.map(d => `
-      <div class="bill-item">
-        <div style="display:flex;align-items:center;">
-          <div class="bill-dot" style="background:${d.color || '#5c7cff'};"></div>
-          <div><div style="font-size:13px;font-weight:600;">${d.name}</div><div style="font-size:11px;color:var(--muted);">Day ${d.due_day} · ${d.type}</div></div>
+  const allDebts = getDebts().filter(d => d.included && d.dueDay);
+  const upcoming = allDebts
+    .map(d => {
+      const days = daysUntilNext(parseInt(d.dueDay));
+      const date = dueDateThisOrNext(parseInt(d.dueDay));
+      return { ...d, days, date };
+    })
+    .filter(d => d.days <= window_)
+    .sort((a, b) => a.days - b.days);
+
+  const list = document.getElementById('reminders-list');
+  const empty = document.getElementById('reminders-empty');
+
+  if (upcoming.length === 0) {
+    list.style.display  = 'none';
+    empty.style.display = 'block';
+  } else {
+    list.style.display  = 'flex';
+    empty.style.display = 'none';
+
+    list.innerHTML = upcoming.map(d => {
+      const isToday  = d.days === 0;
+      const isSoon   = d.days > 0 && d.days <= urgent;
+      const isNear   = d.days > urgent && d.days <= 7;
+      const cls      = isToday ? 'today' : isSoon ? 'soon' : isNear ? 'upcoming' : 'future';
+      const icon     = isToday ? '🚨' : isSoon ? '⚠️' : '📅';
+      const whenText = isToday ? 'DUE TODAY'
+                     : d.days === 1 ? 'Due tomorrow'
+                     : 'Due in ' + d.days + ' days';
+      const dateStr  = d.date.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+      const amtColor = isToday ? 'var(--red)' : isSoon ? 'var(--orange)' : 'var(--text)';
+      const whenColor= isToday ? 'var(--red)' : isSoon ? 'var(--orange)' : isSoon ? 'var(--accent)' : 'var(--muted)';
+
+      return `<div class="reminder-item ${cls}">
+        <div class="ri-icon">${icon}</div>
+        <div class="ri-body">
+          <div class="ri-name">${d.name}</div>
+          <div class="ri-meta">${d.type} · Day ${d.dueDay} · ${dateStr}</div>
         </div>
-        <div style="text-align:right;">
-          <div style="font-family:var(--mono);font-weight:600;">${fmt(d.min_payment)}</div>
-          <div>${urgencyBadge(d.daysUntil)}</div>
+        <div class="ri-right">
+          <div class="ri-amount" style="color:${amtColor};">${fmt(d.minPayment)}</div>
+          <div class="ri-when" style="color:${whenColor};font-weight:700;">${whenText}</div>
         </div>
-      </div>`).join('')
-    : '<div style="color:var(--muted);font-size:13px;padding:12px 0;">No active debts yet. Add them in Debts & Bills.</div>';
+      </div>`;
+    }).join('');
+  }
 
-  // Goals summary
-  document.getElementById('goals-summary').innerHTML = (goals || []).length
-    ? (goals || []).map(g => {
+  // ── Goals summary ──────────────────────────────────────────────────────────
+  document.getElementById('goals-summary').innerHTML = goals.length
+    ? goals.map(g => {
         const pct = g.target > 0 ? Math.min(100, g.current / g.target * 100) : 0;
         return `<div style="margin-bottom:16px;">
           <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
-            <span style="font-weight:600;">${g.emoji} ${g.name}</span>
+            <span style="font-weight:600;">${g.emoji || '🎯'} ${g.name}</span>
             <span style="color:var(--muted);">${fmt(g.current)} / ${fmt(g.target)}</span>
           </div>
           <div class="progress"><div class="progress-fill" style="width:${pct}%;background:var(--green);"></div></div>
@@ -636,77 +566,83 @@ async function loadDashboard() {
 }
 
 // ── DEBTS ─────────────────────────────────────────────────────────────────────
-async function loadDebts() {
-  const { data, error } = await sb.from('debts').select('*').order('created_at');
-  if (error) { toast('Error loading debts: ' + error.message); return; }
-
-  let totalBalance = 0, totalPayment = 0;
-  document.getElementById('debts-body').innerHTML = (data || []).map(d => {
-    totalBalance += parseFloat(d.balance) || 0;
-    totalPayment += parseFloat(d.min_payment) || 0;
-    const util = d.credit_limit > 0 ? (d.balance / d.credit_limit * 100) : null;
-    const utilStr = util !== null ? `<span style="color:${util > 80 ? 'var(--red)' : 'var(--green)'}">${fmtPct(util)}</span>` : '—';
-    const days = parseInt(d.due_day) ? daysUntilNext(parseInt(d.due_day)) : null;
+function renderDebts() {
+  const debts = getDebts();
+  let totalBal = 0, totalPmt = 0;
+  document.getElementById('debts-body').innerHTML = debts.map(d => {
+    if (d.included) { totalBal += parseFloat(d.balance) || 0; totalPmt += parseFloat(d.minPayment) || 0; }
+    const util = d.creditLimit > 0 ? (d.balance / d.creditLimit * 100) : null;
+    const utilStr = util !== null
+      ? `<span style="color:${util > 80 ? 'var(--red)' : 'var(--green)'}">${util.toFixed(1)}%</span>`
+      : '—';
+    const days = d.dueDay ? daysUntilNext(parseInt(d.dueDay)) : null;
+    const daysStr = days !== null
+      ? `<span style="color:var(--muted);font-size:11px;"> (${days}d)</span>`
+      : '';
     return `<tr>
-      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.color || '#5c7cff'};margin-right:8px;"></span><strong>${d.name}</strong>${!d.included ? ' <span style="color:var(--muted);font-size:11px;">(excluded)</span>' : ''}</td>
+      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.color||'#5c7cff'};margin-right:8px;vertical-align:middle;"></span><strong>${d.name}</strong>${!d.included ? ' <span style="color:var(--muted);font-size:11px;">(excl.)</span>' : ''}</td>
       <td><span class="badge badge-blue">${d.type}</span></td>
       <td style="font-family:var(--mono);">${fmt(d.balance)}</td>
       <td>${d.apr}%</td>
-      <td style="font-family:var(--mono);color:var(--red);">${fmt(d.min_payment)}</td>
-      <td>${d.due_day ? `Day ${d.due_day}${days !== null ? ' <span style="color:var(--muted);font-size:11px;">('+days+'d)</span>' : ''}` : '—'}</td>
+      <td style="font-family:var(--mono);color:var(--red);">${fmt(d.minPayment)}</td>
+      <td>${d.dueDay ? 'Day ' + d.dueDay + daysStr : '—'}</td>
       <td>${utilStr}</td>
-      <td><button class="btn-icon" onclick="editDebt('${d.id}')">✏️</button> <button class="btn-icon" style="color:var(--red);" onclick="deleteRow('debts','${d.id}',loadDebts)">🗑</button></td>
+      <td style="white-space:nowrap;"><button class="btn-icon" onclick="editDebt('${d.id}')">✏️</button> <button class="btn-icon" onclick="deleteItem('ff_debts','${d.id}')">🗑</button></td>
     </tr>`;
-  }).join('');
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No debts yet. Click + Add.</td></tr>';
 
-  document.getElementById('debts-foot').innerHTML = `<td colspan="2">Totals</td><td style="font-family:var(--mono);">${fmt(totalBalance)}</td><td>—</td><td style="font-family:var(--mono);color:var(--red);">${fmt(totalPayment)}</td><td colspan="3"></td>`;
+  document.getElementById('debts-foot').innerHTML =
+    `<td colspan="2">Totals</td><td style="font-family:var(--mono);">${fmt(totalBal)}</td><td>—</td><td style="font-family:var(--mono);color:var(--red);">${fmt(totalPmt)}</td><td colspan="3"></td>`;
 }
 
-async function editDebt(id) {
-  const { data } = await sb.from('debts').select('*').eq('id', id).single();
-  if (!data) return;
+function saveDebt() {
+  const id = document.getElementById('debt-id').value;
+  const row = {
+    id:          id || uid(),
+    name:        document.getElementById('d-name').value.trim(),
+    type:        document.getElementById('d-type').value,
+    balance:     parseFloat(document.getElementById('d-balance').value) || 0,
+    apr:         parseFloat(document.getElementById('d-apr').value) || 0,
+    minPayment:  parseFloat(document.getElementById('d-payment').value) || 0,
+    dueDay:      parseInt(document.getElementById('d-due').value) || null,
+    creditLimit: parseFloat(document.getElementById('d-limit').value) || 0,
+    color:       document.getElementById('d-color').value,
+    notes:       document.getElementById('d-notes').value.trim(),
+    included:    document.getElementById('d-included').checked,
+  };
+  if (!row.name) { toast('Name is required'); return; }
+  const debts = getDebts();
+  const idx = debts.findIndex(d => d.id === id);
+  if (idx >= 0) debts[idx] = row; else debts.push(row);
+  save('ff_debts', debts);
+  closeModal('debt');
+  render();
+  toast(id ? '✅ Updated' : '✅ Added');
+}
+
+function editDebt(id) {
+  const d = getDebts().find(x => x.id === id);
+  if (!d) return;
   document.getElementById('debt-modal-title').textContent = 'Edit Debt';
-  document.getElementById('debt-id').value   = data.id;
-  document.getElementById('d-name').value    = data.name;
-  document.getElementById('d-type').value    = data.type;
-  document.getElementById('d-balance').value = data.balance;
-  document.getElementById('d-apr').value     = data.apr;
-  document.getElementById('d-payment').value = data.min_payment;
-  document.getElementById('d-due').value     = data.due_day;
-  document.getElementById('d-limit').value   = data.credit_limit;
-  document.getElementById('d-color').value   = data.color || '#5c7cff';
-  document.getElementById('d-notes').value   = data.notes || '';
-  document.getElementById('d-included').checked = data.included;
+  document.getElementById('debt-id').value    = d.id;
+  document.getElementById('d-name').value     = d.name;
+  document.getElementById('d-type').value     = d.type;
+  document.getElementById('d-balance').value  = d.balance;
+  document.getElementById('d-apr').value      = d.apr;
+  document.getElementById('d-payment').value  = d.minPayment;
+  document.getElementById('d-due').value      = d.dueDay || '';
+  document.getElementById('d-limit').value    = d.creditLimit || '';
+  document.getElementById('d-color').value    = d.color || '#5c7cff';
+  document.getElementById('d-notes').value    = d.notes || '';
+  document.getElementById('d-included').checked = d.included;
   openModal('debt');
 }
 
-async function saveDebt() {
-  const id = document.getElementById('debt-id').value;
-  const row = {
-    name:         document.getElementById('d-name').value.trim(),
-    type:         document.getElementById('d-type').value,
-    balance:      parseFloat(document.getElementById('d-balance').value) || 0,
-    apr:          parseFloat(document.getElementById('d-apr').value) || 0,
-    min_payment:  parseFloat(document.getElementById('d-payment').value) || 0,
-    due_day:      parseInt(document.getElementById('d-due').value) || null,
-    credit_limit: parseFloat(document.getElementById('d-limit').value) || 0,
-    color:        document.getElementById('d-color').value,
-    notes:        document.getElementById('d-notes').value.trim(),
-    included:     document.getElementById('d-included').checked,
-  };
-  if (!row.name) { toast('Name is required'); return; }
-  const { error } = id ? await sb.from('debts').update(row).eq('id', id) : await sb.from('debts').insert(row);
-  if (error) { toast('Error: ' + error.message); return; }
-  closeModal('debt');
-  toast(id ? '✅ Debt updated' : '✅ Debt added');
-  loadDebts();
-}
-
 // ── INCOME ────────────────────────────────────────────────────────────────────
-async function loadIncome() {
-  const { data } = await sb.from('income').select('*').order('created_at');
+function renderIncome() {
+  const income = getIncome();
   let total = 0;
-  document.getElementById('income-body').innerHTML = (data || []).map(r => {
+  document.getElementById('income-body').innerHTML = income.map(r => {
     const mo = monthlyEquiv(r.amount, r.frequency);
     total += mo;
     return `<tr>
@@ -714,259 +650,198 @@ async function loadIncome() {
       <td style="font-family:var(--mono);">${fmt(r.amount)}</td>
       <td><span class="badge badge-green">${r.frequency}</span></td>
       <td style="font-family:var(--mono);color:var(--green);">${fmt(mo)}</td>
-      <td><button class="btn-icon" onclick="editIncome('${r.id}')">✏️</button> <button class="btn-icon" style="color:var(--red);" onclick="deleteRow('income','${r.id}',loadIncome)">🗑</button></td>
+      <td><button class="btn-icon" onclick="editIncome('${r.id}')">✏️</button> <button class="btn-icon" onclick="deleteItem('ff_income','${r.id}')">🗑</button></td>
     </tr>`;
-  }).join('');
-  document.getElementById('income-foot').innerHTML = `<td colspan="3">Monthly Total</td><td style="font-family:var(--mono);color:var(--green);">${fmt(total)}</td><td></td>`;
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No income yet. Click + Add.</td></tr>';
+  document.getElementById('income-foot').innerHTML =
+    `<td colspan="3">Monthly Total</td><td style="font-family:var(--mono);color:var(--green);">${fmt(total)}</td><td></td>`;
 }
 
-async function editIncome(id) {
-  const { data } = await sb.from('income').select('*').eq('id', id).single();
-  if (!data) return;
+function saveIncome() {
+  const id = document.getElementById('income-id').value;
+  const row = { id: id || uid(), name: document.getElementById('i-name').value.trim(), amount: parseFloat(document.getElementById('i-amount').value) || 0, frequency: document.getElementById('i-freq').value };
+  if (!row.name) { toast('Name is required'); return; }
+  const income = getIncome();
+  const idx = income.findIndex(r => r.id === id);
+  if (idx >= 0) income[idx] = row; else income.push(row);
+  save('ff_income', income);
+  closeModal('income');
+  render();
+  toast(id ? '✅ Updated' : '✅ Added');
+}
+
+function editIncome(id) {
+  const r = getIncome().find(x => x.id === id);
+  if (!r) return;
   document.getElementById('income-modal-title').textContent = 'Edit Income';
-  document.getElementById('income-id').value = data.id;
-  document.getElementById('i-name').value    = data.name;
-  document.getElementById('i-amount').value  = data.amount;
-  document.getElementById('i-freq').value    = data.frequency;
+  document.getElementById('income-id').value  = r.id;
+  document.getElementById('i-name').value     = r.name;
+  document.getElementById('i-amount').value   = r.amount;
+  document.getElementById('i-freq').value     = r.frequency;
   openModal('income');
 }
 
-async function saveIncome() {
-  const id = document.getElementById('income-id').value;
-  const row = {
-    name:      document.getElementById('i-name').value.trim(),
-    amount:    parseFloat(document.getElementById('i-amount').value) || 0,
-    frequency: document.getElementById('i-freq').value,
-  };
-  if (!row.name) { toast('Name is required'); return; }
-  const { error } = id ? await sb.from('income').update(row).eq('id', id) : await sb.from('income').insert(row);
-  if (error) { toast('Error: ' + error.message); return; }
-  closeModal('income');
-  toast(id ? '✅ Income updated' : '✅ Income added');
-  loadIncome();
-}
-
 // ── EXPENSES ──────────────────────────────────────────────────────────────────
-async function loadExpenses() {
-  const { data } = await sb.from('expenses').select('*').order('created_at');
+function renderExpenses() {
+  const expenses = getExpenses();
   let total = 0;
-  document.getElementById('expenses-body').innerHTML = (data || []).map(r => {
+  document.getElementById('expenses-body').innerHTML = expenses.map(r => {
     total += parseFloat(r.amount) || 0;
     return `<tr>
       <td><strong>${r.name}</strong></td>
       <td style="font-family:var(--mono);">${fmt(r.amount)}</td>
       <td><span class="badge badge-orange">${r.category}</span></td>
-      <td><button class="btn-icon" onclick="editExpense('${r.id}')">✏️</button> <button class="btn-icon" style="color:var(--red);" onclick="deleteRow('expenses','${r.id}',loadExpenses)">🗑</button></td>
+      <td><button class="btn-icon" onclick="editExpense('${r.id}')">✏️</button> <button class="btn-icon" onclick="deleteItem('ff_expenses','${r.id}')">🗑</button></td>
     </tr>`;
-  }).join('');
-  document.getElementById('expenses-foot').innerHTML = `<td colspan="2">Monthly Total</td><td style="font-family:var(--mono);color:var(--red);">${fmt(total)}</td><td></td>`;
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No expenses yet. Click + Add.</td></tr>';
+  document.getElementById('expenses-foot').innerHTML =
+    `<td colspan="2">Monthly Total</td><td style="font-family:var(--mono);color:var(--red);">${fmt(total)}</td><td></td>`;
 }
 
-async function editExpense(id) {
-  const { data } = await sb.from('expenses').select('*').eq('id', id).single();
-  if (!data) return;
+function saveExpense() {
+  const id = document.getElementById('expense-id').value;
+  const row = { id: id || uid(), name: document.getElementById('e-name').value.trim(), amount: parseFloat(document.getElementById('e-amount').value) || 0, category: document.getElementById('e-cat').value };
+  if (!row.name) { toast('Name is required'); return; }
+  const expenses = getExpenses();
+  const idx = expenses.findIndex(r => r.id === id);
+  if (idx >= 0) expenses[idx] = row; else expenses.push(row);
+  save('ff_expenses', expenses);
+  closeModal('expense');
+  render();
+  toast(id ? '✅ Updated' : '✅ Added');
+}
+
+function editExpense(id) {
+  const r = getExpenses().find(x => x.id === id);
+  if (!r) return;
   document.getElementById('expense-modal-title').textContent = 'Edit Expense';
-  document.getElementById('expense-id').value = data.id;
-  document.getElementById('e-name').value     = data.name;
-  document.getElementById('e-amount').value   = data.amount;
-  document.getElementById('e-cat').value      = data.category;
+  document.getElementById('expense-id').value = r.id;
+  document.getElementById('e-name').value     = r.name;
+  document.getElementById('e-amount').value   = r.amount;
+  document.getElementById('e-cat').value      = r.category;
   openModal('expense');
 }
 
-async function saveExpense() {
-  const id = document.getElementById('expense-id').value;
-  const row = {
-    name:     document.getElementById('e-name').value.trim(),
-    amount:   parseFloat(document.getElementById('e-amount').value) || 0,
-    category: document.getElementById('e-cat').value,
-  };
-  if (!row.name) { toast('Name is required'); return; }
-  const { error } = id ? await sb.from('expenses').update(row).eq('id', id) : await sb.from('expenses').insert(row);
-  if (error) { toast('Error: ' + error.message); return; }
-  closeModal('expense');
-  toast(id ? '✅ Expense updated' : '✅ Expense added');
-  loadExpenses();
-}
-
 // ── GOALS ─────────────────────────────────────────────────────────────────────
-async function loadGoals() {
-  const { data } = await sb.from('goals').select('*').order('created_at');
-  document.getElementById('goals-grid').innerHTML = (data || []).map(g => {
-    const pct = g.target > 0 ? Math.min(100, g.current / g.target * 100) : 0;
-    const left = g.monthly_contribution > 0 ? Math.ceil((g.target - g.current) / g.monthly_contribution) : null;
+function renderGoals() {
+  const goals = getGoals();
+  document.getElementById('goals-grid').innerHTML = goals.map(g => {
+    const pct  = g.target > 0 ? Math.min(100, g.current / g.target * 100) : 0;
+    const left = g.monthlyContrib > 0 ? Math.ceil((g.target - g.current) / g.monthlyContrib) : null;
     return `<div class="card">
-      <div style="font-size:28px;margin-bottom:8px;">${g.emoji}</div>
+      <div style="font-size:28px;margin-bottom:8px;">${g.emoji || '🎯'}</div>
       <div style="font-size:16px;font-weight:700;margin-bottom:4px;">${g.name}</div>
       <div style="font-family:var(--mono);font-size:20px;color:var(--green);margin-bottom:2px;">${fmt(g.current)}</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">of ${fmt(g.target)} goal</div>
-      <div class="progress"><div class="progress-fill" style="width:${pct}%;"></div></div>
+      <div class="progress"><div class="progress-fill" style="width:${pct}%;background:var(--green);"></div></div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px;">${pct.toFixed(1)}%${left ? ' · ~' + left + ' months left' : ''}</div>
       ${g.notes ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">${g.notes}</div>` : ''}
       <div style="display:flex;gap:6px;margin-top:14px;">
         <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="editGoal('${g.id}')">Edit</button>
-        <button class="btn-icon" style="color:var(--red);" onclick="deleteRow('goals','${g.id}',loadGoals)">🗑</button>
+        <button class="btn-icon" onclick="deleteItem('ff_goals','${g.id}')">🗑</button>
       </div>
     </div>`;
-  }).join('') || '<div style="color:var(--muted);font-size:14px;padding:20px;">No goals yet. Click + Add Goal to create one.</div>';
+  }).join('') || '<div style="color:var(--muted);font-size:14px;padding:20px;">No goals yet.</div>';
 }
 
-async function editGoal(id) {
-  const { data } = await sb.from('goals').select('*').eq('id', id).single();
-  if (!data) return;
+function saveGoal() {
+  const id = document.getElementById('goal-id').value;
+  const row = { id: id || uid(), name: document.getElementById('g-name').value.trim(), emoji: document.getElementById('g-emoji').value.trim() || '🎯', target: parseFloat(document.getElementById('g-target').value) || 0, current: parseFloat(document.getElementById('g-current').value) || 0, monthlyContrib: parseFloat(document.getElementById('g-contrib').value) || 0, notes: document.getElementById('g-notes').value.trim() };
+  if (!row.name) { toast('Name is required'); return; }
+  const goals = getGoals();
+  const idx = goals.findIndex(g => g.id === id);
+  if (idx >= 0) goals[idx] = row; else goals.push(row);
+  save('ff_goals', goals);
+  closeModal('goal');
+  render();
+  toast(id ? '✅ Updated' : '✅ Added');
+}
+
+function editGoal(id) {
+  const g = getGoals().find(x => x.id === id);
+  if (!g) return;
   document.getElementById('goal-modal-title').textContent = 'Edit Goal';
-  document.getElementById('goal-id').value   = data.id;
-  document.getElementById('g-name').value    = data.name;
-  document.getElementById('g-emoji').value   = data.emoji;
-  document.getElementById('g-target').value  = data.target;
-  document.getElementById('g-current').value = data.current;
-  document.getElementById('g-contrib').value = data.monthly_contribution;
-  document.getElementById('g-notes').value   = data.notes || '';
+  document.getElementById('goal-id').value    = g.id;
+  document.getElementById('g-name').value     = g.name;
+  document.getElementById('g-emoji').value    = g.emoji || '🎯';
+  document.getElementById('g-target').value   = g.target;
+  document.getElementById('g-current').value  = g.current;
+  document.getElementById('g-contrib').value  = g.monthlyContrib || '';
+  document.getElementById('g-notes').value    = g.notes || '';
   openModal('goal');
 }
 
-async function saveGoal() {
-  const id = document.getElementById('goal-id').value;
-  const row = {
-    name:                 document.getElementById('g-name').value.trim(),
-    emoji:                document.getElementById('g-emoji').value.trim() || '🎯',
-    target:               parseFloat(document.getElementById('g-target').value) || 0,
-    current:              parseFloat(document.getElementById('g-current').value) || 0,
-    monthly_contribution: parseFloat(document.getElementById('g-contrib').value) || 0,
-    notes:                document.getElementById('g-notes').value.trim(),
-  };
-  if (!row.name) { toast('Name is required'); return; }
-  const { error } = id ? await sb.from('goals').update(row).eq('id', id) : await sb.from('goals').insert(row);
-  if (error) { toast('Error: ' + error.message); return; }
-  closeModal('goal');
-  toast(id ? '✅ Goal updated' : '✅ Goal added');
-  loadGoals();
-}
-
-// ── LOG ───────────────────────────────────────────────────────────────────────
-async function loadLog() {
-  const { data } = await sb.from('reminder_log').select('*').order('created_at', {ascending: false}).limit(100);
-  document.getElementById('log-body').innerHTML = (data || []).length
-    ? (data || []).map(r => {
-        const statusClass = r.status === 'Sent' ? 'status-sent' : r.status === 'SKIPPED' ? 'status-skipped' : 'status-failed';
-        return `<tr>
-          <td style="color:var(--muted);font-size:12px;white-space:nowrap;">${new Date(r.created_at).toLocaleString()}</td>
-          <td><span class="badge badge-blue">${r.type}</span></td>
-          <td style="font-size:12px;">${r.recipient || '—'}</td>
-          <td style="font-size:12px;">${r.subject || '—'}</td>
-          <td class="${statusClass}" style="font-weight:700;">${r.status}</td>
-        </tr>`;
-      }).join('')
-    : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No reminder history yet.</td></tr>';
-}
-
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
-function buildCarrierGrid() {
-  const saved = localStorage.getItem('ff_carrier') || 'att';
-  document.getElementById('carrier-grid').innerHTML = CARRIERS.map(c =>
-    `<button class="carrier-btn ${c.id === saved ? 'active' : ''}" onclick="selectCarrier('${c.id}')">${c.label}</button>`
-  ).join('');
-  document.getElementById('s-carrier').value = saved;
+function renderSettings() {
+  const s = getSettings();
+  document.getElementById('s-reminder-window').value = s.reminderWindow || 14;
+  document.getElementById('s-urgent-days').value     = s.urgentDays || 3;
 }
 
-function selectCarrier(id) {
-  document.getElementById('s-carrier').value = id;
-  document.querySelectorAll('.carrier-btn').forEach(b => b.classList.toggle('active', b.textContent === CARRIERS.find(c => c.id === id)?.label));
+function saveSettings() {
+  save('ff_settings', {
+    reminderWindow: parseInt(document.getElementById('s-reminder-window').value) || 14,
+    urgentDays:     parseInt(document.getElementById('s-urgent-days').value) || 3,
+  });
+  render();
+  toast('✅ Settings saved');
 }
 
-async function loadSettings() {
-  const { data } = await sb.from('settings').select('*');
-  if (!data) return;
-  const s = Object.fromEntries(data.map(r => [r.key, r.value]));
-
-  const setEl = (id, val) => { const el = document.getElementById(id); if (el) { if (el.type === 'checkbox') el.checked = val !== 'false' && val === 'true'; else el.value = val || ''; }};
-  const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val !== 'false'; };
-
-  setEl('s-email', s.email);
-  setEl('s-resend-key', s.resend_api_key);
-  setEl('s-phone', s.phone_number);
-  setEl('s-reminder-days', s.reminder_days || '7,3,1');
-  setEl('s-grace-days', s.overdue_grace_days || '3');
-  setChk('s-enable-email', s.enable_email !== 'false');
-  setChk('s-enable-sms', s.enable_sms === 'true');
-  setChk('s-due-today', s.send_due_today !== 'false');
-  setChk('s-overdue-alert', s.overdue_alert_enabled !== 'false');
-  setChk('s-weekly', s.weekly_digest_enabled !== 'false');
-  setChk('s-monthly', s.monthly_report_enabled !== 'false');
-
-  if (s.phone_carrier) {
-    document.getElementById('s-carrier').value = s.phone_carrier;
-    document.querySelectorAll('.carrier-btn').forEach(b => b.classList.toggle('active', b.textContent === CARRIERS.find(c => c.id === s.phone_carrier)?.label));
-  }
+// ── SHARED HELPERS ────────────────────────────────────────────────────────────
+function deleteItem(storeKey, id) {
+  if (!confirm('Delete this item?')) return;
+  save(storeKey, load(storeKey, []).filter(r => r.id !== id));
+  render();
+  toast('Deleted');
 }
 
-async function saveSettings() {
-  const updates = [
-    { key: 'email',                  value: document.getElementById('s-email').value.trim() },
-    { key: 'resend_api_key',         value: document.getElementById('s-resend-key').value.trim() },
-    { key: 'phone_number',           value: document.getElementById('s-phone').value.replace(/\D/g,'') },
-    { key: 'phone_carrier',          value: document.getElementById('s-carrier').value },
-    { key: 'reminder_days',          value: document.getElementById('s-reminder-days').value.trim() },
-    { key: 'overdue_grace_days',     value: document.getElementById('s-grace-days').value },
-    { key: 'enable_email',           value: document.getElementById('s-enable-email').checked ? 'true' : 'false' },
-    { key: 'enable_sms',             value: document.getElementById('s-enable-sms').checked  ? 'true' : 'false' },
-    { key: 'send_due_today',         value: document.getElementById('s-due-today').checked   ? 'true' : 'false' },
-    { key: 'overdue_alert_enabled',  value: document.getElementById('s-overdue-alert').checked ? 'true' : 'false' },
-    { key: 'weekly_digest_enabled',  value: document.getElementById('s-weekly').checked      ? 'true' : 'false' },
-    { key: 'monthly_report_enabled', value: document.getElementById('s-monthly').checked     ? 'true' : 'false' },
-  ];
+const fmt = n => '$' + (parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const { error } = await sb.from('settings').upsert(updates, { onConflict: 'key' });
-  if (error) { toast('❌ Error saving: ' + error.message); return; }
-  toast('✅ Settings saved!');
+function toast(msg, ms) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), ms || 2600);
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') === `nav('${page}')`) n.classList.add('active');
+  });
 }
 
 // ── MODALS ────────────────────────────────────────────────────────────────────
 function openModal(type) {
-  if (type === 'debt' && !document.getElementById('debt-id').value) {
-    document.getElementById('debt-modal-title').textContent = 'Add Debt';
-    ['debt-id','d-name','d-balance','d-apr','d-payment','d-due','d-limit','d-notes'].forEach(id => { document.getElementById(id).value = ''; });
-    document.getElementById('d-type').value = 'Credit Card';
-    document.getElementById('d-color').value = '#5c7cff';
-    document.getElementById('d-included').checked = true;
-  }
-  if (type === 'income' && !document.getElementById('income-id').value) {
-    document.getElementById('income-modal-title').textContent = 'Add Income';
-    ['income-id','i-name','i-amount'].forEach(id => { document.getElementById(id).value = ''; });
-    document.getElementById('i-freq').value = 'monthly';
-  }
-  if (type === 'expense' && !document.getElementById('expense-id').value) {
-    document.getElementById('expense-modal-title').textContent = 'Add Expense';
-    ['expense-id','e-name','e-amount'].forEach(id => { document.getElementById(id).value = ''; });
-    document.getElementById('e-cat').value = 'housing';
-  }
-  if (type === 'goal' && !document.getElementById('goal-id').value) {
-    document.getElementById('goal-modal-title').textContent = 'Add Goal';
-    ['goal-id','g-name','g-target','g-current','g-contrib','g-notes'].forEach(id => { document.getElementById(id).value = ''; });
-    document.getElementById('g-emoji').value = '🎯';
+  const ids = { debt: ['debt-id','d-name','d-balance','d-apr','d-payment','d-due','d-limit','d-notes'], income: ['income-id','i-name','i-amount'], expense: ['expense-id','e-name','e-amount'], goal: ['goal-id','g-name','g-target','g-current','g-contrib','g-notes'] };
+  if (!document.getElementById(ids[type][0]).value) {
+    ids[type].forEach(id => { document.getElementById(id).value = ''; });
+    if (type === 'debt')    { document.getElementById('d-color').value = '#5c7cff'; document.getElementById('d-type').value = 'Credit Card'; document.getElementById('d-included').checked = true; document.getElementById('debt-modal-title').textContent = 'Add Debt / Bill'; }
+    if (type === 'income')  { document.getElementById('i-freq').value = 'monthly'; document.getElementById('income-modal-title').textContent = 'Add Income'; }
+    if (type === 'expense') { document.getElementById('e-cat').value = 'housing'; document.getElementById('expense-modal-title').textContent = 'Add Expense'; }
+    if (type === 'goal')    { document.getElementById('g-emoji').value = '🎯'; document.getElementById('goal-modal-title').textContent = 'Add Goal'; }
   }
   document.getElementById('modal-' + type).classList.add('open');
 }
 
 function closeModal(type) {
   document.getElementById('modal-' + type).classList.remove('open');
-  // Clear hidden ID so next open() knows it's a new record
-  const idFields = { debt: 'debt-id', income: 'income-id', expense: 'expense-id', goal: 'goal-id' };
-  if (idFields[type]) document.getElementById(idFields[type]).value = '';
+  const idMap = { debt: 'debt-id', income: 'income-id', expense: 'expense-id', goal: 'goal-id' };
+  document.getElementById(idMap[type]).value = '';
 }
 
-// Close modal on backdrop click
 document.querySelectorAll('.modal-backdrop').forEach(bd => {
-  bd.addEventListener('click', e => { if (e.target === bd) { const type = bd.id.replace('modal-',''); closeModal(type); }});
+  bd.addEventListener('click', e => {
+    if (e.target === bd) closeModal(bd.id.replace('modal-', ''));
+  });
 });
 
-// ── DELETE ────────────────────────────────────────────────────────────────────
-async function deleteRow(table, id, reloader) {
-  if (!confirm('Delete this record?')) return;
-  const { error } = await sb.from(table).delete().eq('id', id);
-  if (error) { toast('Error: ' + error.message); return; }
-  toast('✅ Deleted');
-  reloader();
-}
+// ── START ─────────────────────────────────────────────────────────────────────
+render();
 </script>
 </body>
 </html>
