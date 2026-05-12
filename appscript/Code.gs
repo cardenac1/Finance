@@ -74,7 +74,6 @@ function setupSheet(ss, name, headers) {
   hr.setFontColor('#5c7cff');
   hr.setFontWeight('bold');
   hr.setFontSize(11);
-  hr.setFrozenRows(1);
   sheet.setFrozenRows(1);
   return sheet;
 }
