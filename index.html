@@ -155,22 +155,21 @@ tr:hover td{background:var(--surface2);}
 </head>
 <body>
 
-<!-- SETUP SCREEN (shown until Supabase is configured) -->
+<!-- SETUP SCREEN (shown only until CONFIG values are filled in) -->
 <div id="setup-screen" style="display:none;padding:20px;">
   <div class="setup-card">
     <div style="font-size:32px;margin-bottom:12px;">💳</div>
-    <h1>Welcome to <span style="color:var(--accent)">FinFlow</span></h1>
-    <p>Enter your Supabase project credentials to get started. You'll find these in your Supabase dashboard under <strong>Project Settings → API</strong>.</p>
-    <div class="form-row">
-      <label>Supabase Project URL</label>
-      <input id="setup-url" type="text" placeholder="https://xxxxxxxxxxxx.supabase.co">
-    </div>
-    <div class="form-row">
-      <label>Supabase Anon Key</label>
-      <input id="setup-key" type="text" placeholder="eyJhbGci...">
-    </div>
-    <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="saveSetup()">Connect to Supabase →</button>
-    <p style="margin-top:16px;font-size:11px;color:var(--muted);text-align:center;">These are saved in your browser's localStorage only. Never shared.</p>
+    <h1>Almost there — one-time setup</h1>
+    <p style="margin-bottom:20px;">Open <strong style="color:var(--accent)">index.html</strong> in a text editor and fill in the two lines near the top of the <code style="color:var(--accent2)">&lt;script&gt;</code> block:</p>
+    <pre style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;font-size:12px;line-height:1.8;color:var(--accent2);overflow-x:auto;">const CONFIG = {
+  supabaseUrl: '<span style="color:var(--green)">https://xxxxxxxxxxxx.supabase.co</span>',
+  supabaseKey: '<span style="color:var(--green)">eyJhbGci... (your anon key)</span>',
+};</pre>
+    <p style="margin-top:16px;font-size:13px;color:var(--muted);line-height:1.7;">
+      Find both values in your Supabase project under<br>
+      <strong style="color:var(--text)">Settings → API → Project URL &amp; anon public key</strong>.<br><br>
+      Save the file and refresh this page. You'll never be asked again.
+    </p>
   </div>
 </div>
 
@@ -188,9 +187,7 @@ tr:hover td{background:var(--surface2);}
     <div class="nav-section">Reminders</div>
     <div class="nav-item" onclick="nav('log')"><span class="nav-icon">📋</span><span>Reminder Log</span></div>
     <div class="nav-item" onclick="nav('settings')"><span class="nav-icon">⚙️</span><span>Settings</span></div>
-    <div class="sidebar-footer">
-      <button class="btn btn-ghost btn-sm" style="width:100%;font-size:11px;" onclick="disconnect()">Disconnect</button>
-    </div>
+    <div class="sidebar-footer" style="font-size:11px;color:var(--muted);text-align:center;">FinFlow</div>
   </nav>
 
   <main class="main">
@@ -354,32 +351,55 @@ tr:hover td{background:var(--surface2);}
           </div>
 
           <div class="card settings-section">
-            <h3>🔁 Background Reminders</h3>
-            <p style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;">
-              Automatic reminders run via a <strong style="color:var(--text)">Supabase Edge Function</strong> triggered by a daily cron job.
-              Set it up once in your Supabase dashboard:
+            <h3>🔁 How to activate background reminders</h3>
+            <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px;">
+              Everything below is done entirely in your browser — no terminal or command line needed.
             </p>
-            <ol style="font-size:12px;color:var(--muted);line-height:2;padding-left:18px;">
-              <li>Deploy the Edge Function in <code style="color:var(--accent)">supabase/functions/send-reminders/</code></li>
-              <li>Add <code style="color:var(--accent)">RESEND_API_KEY</code> as a secret in the Supabase dashboard</li>
-              <li>Go to <strong style="color:var(--text)">Database → Extensions</strong> and enable <code style="color:var(--accent)">pg_cron</code></li>
-              <li>Run this SQL in the SQL editor:</li>
-            </ol>
-            <pre style="margin-top:10px;background:var(--surface2);padding:12px;border-radius:8px;font-size:11px;color:var(--accent2);overflow-x:auto;white-space:pre-wrap;line-height:1.5;">select cron.schedule(
-  'finflow-daily-reminders',
-  '0 9 * * *',
-  $$
-  select net.http_post(
-    url := current_setting('app.supabase_url') || '/functions/v1/send-reminders',
-    headers := jsonb_build_object(
-      'Authorization', 'Bearer ' || current_setting('app.service_role_key'),
-      'Content-Type', 'application/json'
-    ),
-    body := '{}'::jsonb
-  );
-  $$
-);</pre>
-            <div style="font-size:11px;color:var(--muted);margin-top:8px;">This runs every day at 9 AM UTC. Adjust the cron expression to change the time.</div>
+
+            <div style="display:flex;flex-direction:column;gap:14px;">
+
+              <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+                <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">Step 1 — Create the Edge Function in Supabase</div>
+                <ol style="font-size:12px;color:var(--muted);line-height:2;padding-left:16px;">
+                  <li>Go to <strong style="color:var(--text)">supabase.com</strong> → open your project</li>
+                  <li>Click <strong style="color:var(--text)">Edge Functions</strong> in the left sidebar</li>
+                  <li>Click <strong style="color:var(--text)">"Create a new function"</strong></li>
+                  <li>Name it <code style="color:var(--accent2)">send-reminders</code></li>
+                  <li>Delete the placeholder code and paste in the entire contents of<br><code style="color:var(--accent2)">supabase/functions/send-reminders/index.ts</code> from this repo</li>
+                  <li>Click <strong style="color:var(--text)">Deploy</strong></li>
+                </ol>
+              </div>
+
+              <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+                <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">Step 2 — Add your Resend API key as a secret</div>
+                <ol style="font-size:12px;color:var(--muted);line-height:2;padding-left:16px;">
+                  <li>Still in Supabase, click <strong style="color:var(--text)">Edge Functions</strong> → <strong style="color:var(--text)">Secrets</strong> (top tabs)</li>
+                  <li>Click <strong style="color:var(--text)">"Add new secret"</strong></li>
+                  <li>Name: <code style="color:var(--accent2)">RESEND_API_KEY</code> &nbsp; Value: your <code style="color:var(--accent2)">re_...</code> key</li>
+                  <li>Click Save</li>
+                </ol>
+              </div>
+
+              <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+                <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">Step 3 — Schedule it with cron-job.org (free, no terminal)</div>
+                <ol style="font-size:12px;color:var(--muted);line-height:2;padding-left:16px;">
+                  <li>Go to <strong style="color:var(--text)">cron-job.org</strong> and create a free account</li>
+                  <li>Click <strong style="color:var(--text)">Create cronjob</strong></li>
+                  <li>Set the URL to:<br><code style="color:var(--accent2);word-break:break-all;" id="fn-url">https://YOUR_PROJECT_REF.supabase.co/functions/v1/send-reminders</code></li>
+                  <li>Under <strong style="color:var(--text)">Headers</strong>, add:<br>
+                    Key: <code style="color:var(--accent2)">Authorization</code><br>
+                    Value: <code style="color:var(--accent2)">Bearer YOUR_SERVICE_ROLE_KEY</code>
+                  </li>
+                  <li>Set schedule to <strong style="color:var(--text)">Every day at 9:00 AM</strong> (pick your timezone)</li>
+                  <li>Click Create — done! It runs automatically every day.</li>
+                </ol>
+                <div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+                  Your <strong style="color:var(--text)">project ref</strong> is the letters in your Supabase URL (e.g. <code>abcdefghijkl</code> from <code>https://abcdefghijkl.supabase.co</code>).<br>
+                  Your <strong style="color:var(--text)">service_role key</strong> is in Supabase → Settings → API → service_role (keep this private).
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
       </div>
@@ -482,51 +502,36 @@ tr:hover td{background:var(--surface2);}
 <div id="toast"></div>
 
 <script>
-// ── CONFIG ──────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════
+//  CONFIGURATION — fill these in once, then you're done forever
+// ════════════════════════════════════════════════════════════════
+const CONFIG = {
+  supabaseUrl:  'PASTE_YOUR_PROJECT_URL_HERE',   // e.g. https://abcdef.supabase.co
+  supabaseKey:  'PASTE_YOUR_ANON_KEY_HERE',       // the long eyJ... string
+};
+// ════════════════════════════════════════════════════════════════
+
 const CARRIERS = [
   {id:'att',label:'AT&T'},{id:'tmobile',label:'T-Mobile'},{id:'verizon',label:'Verizon'},
   {id:'sprint',label:'Sprint'},{id:'boost',label:'Boost'},{id:'cricket',label:'Cricket'},
   {id:'googlefi',label:'Google Fi'},{id:'metro',label:'Metro PCS'},{id:'uscellular',label:'US Cellular'},
 ];
 
-let sb = null; // Supabase client
-
 // ── INIT ─────────────────────────────────────────────────────────────────────
+const NOT_CONFIGURED = CONFIG.supabaseUrl.startsWith('PASTE') || CONFIG.supabaseKey.startsWith('PASTE');
+
+const sb = NOT_CONFIGURED ? null : supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+
 (function init() {
-  const url = localStorage.getItem('ff_url');
-  const key = localStorage.getItem('ff_key');
-  if (url && key) {
-    sb = supabase.createClient(url, key);
-    showApp();
-  } else {
+  if (NOT_CONFIGURED) {
     document.getElementById('setup-screen').style.display = 'block';
+    return;
   }
-})();
-
-function saveSetup() {
-  const url = document.getElementById('setup-url').value.trim();
-  const key = document.getElementById('setup-key').value.trim();
-  if (!url || !key) { toast('Enter both URL and anon key'); return; }
-  localStorage.setItem('ff_url', url);
-  localStorage.setItem('ff_key', key);
-  sb = supabase.createClient(url, key);
-  document.getElementById('setup-screen').style.display = 'none';
-  showApp();
-}
-
-function disconnect() {
-  if (!confirm('Disconnect from Supabase? You will need to re-enter your credentials.')) return;
-  localStorage.removeItem('ff_url');
-  localStorage.removeItem('ff_key');
-  location.reload();
-}
-
-function showApp() {
   document.getElementById('app').style.display = 'flex';
   buildCarrierGrid();
   loadDashboard();
   loadSettings();
-}
+})();
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
 const PAGE_LOADERS = { dashboard: loadDashboard, debts: loadDebts, income: loadIncome, expenses: loadExpenses, goals: loadGoals, log: loadLog, settings: loadSettings };
