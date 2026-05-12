@@ -428,16 +428,20 @@ function sendBillReminders() {
     if (!debt.dueDay || !debt.included) return;
     var due = parseInt(debt.dueDay);
 
-    if (due > currentDay) {
-      var daysUntil = due - currentDay;
-      if (daysUntil === 0 && dueTodayAlert) {
-        upcoming.push(Object.assign({}, debt, {daysUntilDue: 0}));
-      } else if (reminderDays.indexOf(daysUntil) !== -1) {
-        upcoming.push(Object.assign({}, debt, {daysUntilDue: daysUntil}));
-      }
-    } else if (due === currentDay && dueTodayAlert) {
+    // Days until next occurrence, wrapping across month boundaries.
+    // e.g. today=28, due=3 → (31-28)+3 = 6 days away, not 25 days overdue.
+    var daysUntil = due >= currentDay
+      ? due - currentDay
+      : (daysInMonth - currentDay) + due;
+
+    if (daysUntil === 0 && dueTodayAlert) {
       upcoming.push(Object.assign({}, debt, {daysUntilDue: 0}));
-    } else if (overdueEnabled && (currentDay - due) > graceDays) {
+    } else if (daysUntil > 0 && reminderDays.indexOf(daysUntil) !== -1) {
+      upcoming.push(Object.assign({}, debt, {daysUntilDue: daysUntil}));
+    }
+
+    // Flag as overdue only when this month's due day has passed the grace window.
+    if (overdueEnabled && due < currentDay && (currentDay - due) > graceDays) {
       overdue.push(Object.assign({}, debt, {daysOverdue: currentDay - due}));
     }
   });
