@@ -941,18 +941,19 @@ function requestNotifications() {
   if (!('Notification' in window)) { toast('Your browser does not support notifications'); return; }
   if (Notification.permission === 'granted') {
     save('ff_settings', { ...getSettings(), browserNotifs: true });
-    toast('🔔 Notifications already enabled');
+    toast('🔔 Notifications enabled');
+    updateNotifBtn();
     checkAndNotify();
     return;
   }
   Notification.requestPermission().then(perm => {
     if (perm === 'granted') {
       save('ff_settings', { ...getSettings(), browserNotifs: true });
-      new Notification('FinFlow', { body: '✅ Bill reminders are on! You\'ll be notified when payments are coming up.', icon: '' });
+      new Notification('FinFlow', { body: 'Bill reminders are on! You\'ll be notified automatically while this tab is open.' });
       updateNotifBtn();
       checkAndNotify();
     } else {
-      toast('Notification permission denied — check your browser settings');
+      toast('Permission denied — check your browser site settings');
     }
   });
 }
@@ -961,24 +962,59 @@ function checkAndNotify() {
   if (Notification.permission !== 'granted') return;
   if (!getSettings().browserNotifs) return;
 
-  const settings = getSettings();
-  const urgent   = parseInt(settings.urgentDays) || 3;
-  const debts    = getDebts().filter(d => d.included && d.dueDay);
+  const settings  = getSettings();
+  const alertDays = (settings.calendarAlertDays || '7,3,1').split(',').map(x => parseInt(x.trim())).filter(Boolean);
+  const notifyAt  = [...new Set([0, ...alertDays])]; // always include due-day itself
+  const debts     = getDebts().filter(d => d.included && d.dueDay);
+  const today     = new Date().toDateString();
+
+  // Clean up notification records older than 35 days to avoid localStorage bloat
+  Object.keys(localStorage).filter(k => k.startsWith('ff_notif_')).forEach(k => {
+    const dateStr = k.split('_').slice(4).join('_'); // ff_notif_<id>_<days>_<datestring>
+    if (dateStr && new Date(dateStr) < new Date(Date.now() - 35 * 86400000)) {
+      localStorage.removeItem(k);
+    }
+  });
 
   debts.forEach(d => {
     const days = daysUntilNext(parseInt(d.dueDay));
-    if (days > urgent) return;
+    if (!notifyAt.includes(days)) return;
+
+    // Key includes days-out so 7-day, 3-day, and 1-day alerts each fire exactly once per day
+    const key = 'ff_notif_' + d.id + '_' + days + '_' + today;
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, '1');
 
     const when = days === 0 ? 'TODAY' : days === 1 ? 'tomorrow' : 'in ' + days + ' days';
-    const key  = 'ff_notified_' + d.id + '_' + new Date().toDateString();
-    if (sessionStorage.getItem(key)) return; // already notified this session for this day
-    sessionStorage.setItem(key, '1');
-
     new Notification('💳 ' + d.name + ' due ' + when, {
       body: '$' + parseFloat(d.minPayment).toFixed(2) + ' minimum payment · Day ' + d.dueDay,
       tag:  key,
     });
   });
+}
+
+function autoPromptNotifications() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'denied') return;
+  if (Notification.permission === 'granted' && getSettings().browserNotifs) return;
+  if (getSettings().notifPromptDismissed) return;
+
+  // Show a subtle banner — browsers require a user gesture to actually grant permission,
+  // so we can't silently request it, but we can make it one easy click.
+  const banner = document.createElement('div');
+  banner.id = 'notif-banner';
+  banner.innerHTML =
+    '<div style="position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:#1a1d26;' +
+    'border:1px solid rgba(92,124,255,.5);color:#eef0f8;padding:12px 18px;border-radius:14px;font-size:13px;' +
+    'font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:9998;display:flex;align-items:center;gap:12px;">' +
+    '<span>🔔 Enable automatic bill reminders?</span>' +
+    '<button onclick="requestNotifications();document.getElementById(\'notif-banner\').remove();" ' +
+    'style="background:#5c7cff;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Enable</button>' +
+    '<button onclick="save(\'ff_settings\',{...getSettings(),notifPromptDismissed:true});document.getElementById(\'notif-banner\').remove();" ' +
+    'style="background:none;border:none;color:#6b7299;font-size:20px;line-height:1;cursor:pointer;padding:0 4px;">×</button>' +
+    '</div>';
+  document.body.appendChild(banner);
+  setTimeout(() => { const b = document.getElementById('notif-banner'); if (b) b.remove(); }, 15000);
 }
 
 function updateNotifBtn() {
@@ -994,6 +1030,11 @@ function updateNotifBtn() {
 render();
 updateNotifBtn();
 checkAndNotify();
+autoPromptNotifications();
+
+// Re-check every hour while the tab is open — fires notifications at the right
+// time even if the user leaves the tab open all day
+setInterval(checkAndNotify, 60 * 60 * 1000);
 </script>
 </body>
 </html>
